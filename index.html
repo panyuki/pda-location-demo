@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>科管 · PDA 库位管理模块 产品Demo</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23256FED'/%3E%3Cpath d='M9 8h14M9 16h14M9 24h14' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+:root{
+  --blue:#256FED; --blue-d:#1E61D6; --blue-l:#E8F0FE;
+  --bg:#F5F7FA; --card:#fff; --line:#DCDFE6; --line-2:#F1F3F6;
+  --text:#303133; --sub:#606266; --muted:#909399;
+  --green:#67C23A; --green-bg:#F0F9EB;
+  --amber:#E6A23C; --amber-bg:#FDF6EC;
+  --red:#F56C6C; --red-bg:#FEF0F0;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{background:#DDE1E8;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
+.stage{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 12px;gap:26px;flex-wrap:wrap}
+.device{width:402px;height:690px;background:#0B0E14;border-radius:44px;padding:14px;box-shadow:0 30px 70px rgba(20,30,60,.35),inset 0 0 0 2px #2A2F3A;position:relative;flex:0 0 auto}
+.device::before{content:"";position:absolute;top:20px;left:50%;transform:translateX(-50%);width:74px;height:5px;background:#1A1F29;border-radius:3px}
+.screen{width:100%;height:100%;background:var(--bg);border-radius:32px;overflow:hidden;position:relative;display:flex;flex-direction:column}
+.screen-body{flex:1;overflow:hidden;position:relative}
+.page{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;background:var(--bg);display:none}
+.page.on{display:block}
+/* 状态栏 */
+.statusbar{display:flex;justify-content:space-between;align-items:center;padding:12px 22px 6px;font-size:13px;font-weight:600;color:#111;position:absolute;top:0;left:0;right:0;z-index:30;pointer-events:none}
+/* 导航 */
+.nav{position:sticky;top:0;z-index:20;background:#fff;padding:30px 14px 10px;border-bottom:1px solid var(--line)}
+.nav-row{display:flex;align-items:center;justify-content:space-between}
+.nav-title{font-size:17px;font-weight:600;color:var(--text)}
+.nav-sub{font-size:11.5px;color:var(--muted);text-align:center;padding:2px 0 6px}
+.nav-back{width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:10px;margin-left:-6px}
+.nav-back:active{background:var(--bg)}
+.nav-act{color:var(--blue);font-size:13.5px;cursor:pointer;padding:6px 2px}
+/* 首页 */
+.hero{background:linear-gradient(160deg,#256FED,#1E61D6 62%,#2A5FD8);padding:26px 18px 20px;position:relative;overflow:hidden}
+.hh-row{display:flex;align-items:center;gap:10px;position:relative;z-index:2}
+.hh-ava{width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:600;border:1.5px solid rgba(255,255,255,.5)}
+.hh-name{color:#fff;font-size:16px;font-weight:600}
+.hh-wel{color:rgba(255,255,255,.85);font-size:12px;margin-top:2px}
+.hero-band{margin:12px 14px 0;background:#fff;border-radius:12px;padding:11px 13px;display:flex;align-items:center;gap:10px;border:1px solid var(--line)}
+.hb-ico{width:36px;height:36px;border-radius:9px;background:var(--blue-l);color:var(--blue);display:flex;align-items:center;justify-content:center}
+.hb-txt b{font-size:13.5px;display:block}
+.hb-txt span{font-size:11px;color:var(--muted);display:block;margin-top:2px;line-height:1.5}
+.sec{margin:16px 14px 0}
+.sec-t{font-size:15px;font-weight:600;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:7px}
+.sec-t::before{content:"";width:4px;height:15px;border-radius:2px;background:var(--blue)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.g-item{background:#fff;border-radius:14px;padding:14px 6px 11px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;border:1px solid var(--line);position:relative}
+.g-new{position:absolute;top:7px;right:7px;background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;letter-spacing:.3px}
+.g-item.wide{grid-column:span 3;flex-direction:row;align-items:center;gap:12px;padding:14px;text-align:left}
+.g-item.wide .g-ico{margin:0}
+.g-item.wide .g-txt{flex:1;min-width:0;text-align:left}
+.g-item.wide .g-sub{margin-top:2px}
+.g-item.wide .g-new{position:static;margin-left:auto}
+.g-item:active{transform:scale(.96)}
+.g-ico{width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;background:var(--blue-l);color:var(--blue)}
+.g-item:nth-child(2) .g-ico{background:#E9F6F1;color:#67C23A}
+.g-item:nth-child(3) .g-ico{background:#FDF0E4;color:#E6A23C}
+.g-item:nth-child(4) .g-ico{background:#F3EEFB;color:#7B5EA7}
+.g-item span{font-size:12.5px;color:var(--text);font-weight:500}
+.g-sub{display:block;font-size:10px;color:var(--muted);margin-top:-4px;text-align:center;line-height:1.3}
+/* 通用 */
+.card{background:#fff;border-radius:13px;margin:10px 14px 0;border:1px solid var(--line);overflow:hidden}
+.note{border-left:3px solid var(--blue);background:#fff;border-radius:10px;padding:11px 13px;font-size:12px;color:var(--sub);line-height:1.75;border-top:1px solid var(--line);border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.note b{color:var(--text)}
+.alert{display:flex;align-items:flex-start;gap:7px;border-radius:9px;padding:9px 11px;font-size:12px;line-height:1.6;margin:10px 14px 0}
+.alert.a-blue{background:var(--blue-l);color:var(--blue-d)}
+.alert.a-amber{background:var(--amber-bg);color:#B88230}
+.alert.a-red{background:var(--red-bg);color:#C45656}
+.alert.a-green{background:var(--green-bg);color:#529B2E}
+.btn{border:none;border-radius:10px;padding:12px 14px;font-size:15px;cursor:pointer;font-weight:500}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-primary:active{background:var(--blue-d)}
+.btn-ghost{background:#fff;color:var(--sub);border:1px solid var(--line)}
+.btn-danger{background:#fff;color:var(--red);border:1px solid #FBC7C7}
+.btn-full{width:100%;display:block}
+.btn-sm{padding:7px 12px;font-size:13px;border-radius:8px}
+.btn-row{display:flex;gap:10px;margin:14px}
+.btn-row .btn{flex:1}
+.chips{display:flex;flex-wrap:wrap;gap:8px;padding:10px 14px 0}
+.chip{padding:6px 12px;border-radius:16px;background:#fff;border:1px solid var(--line);font-size:12.5px;color:var(--sub);cursor:pointer}
+.chip.on{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:500}
+.chip.dash{border-style:dashed;color:var(--blue);border-color:#9DBCF5;background:#fff}
+.sim{margin:12px 14px 0;background:#FFFBEA;border:1px dashed #F0D08A;border-radius:9px;padding:9px 11px}
+.sim .st{font-size:11px;color:#9A7B1F;font-weight:600;margin-bottom:7px;display:flex;align-items:center;gap:5px}
+.sim-c{display:flex;flex-wrap:wrap;gap:6px}
+.sim-c .sc{padding:5px 9px;border-radius:6px;background:#fff;border:1px solid #EAD9A8;font-size:11.5px;color:#8A6D1A;cursor:pointer}
+.sim-c .sc:active{background:#E6A23C;color:#fff}
+/* 筛选行（仓库/库区/货架） */
+.fsel{display:flex;gap:7px;padding:8px 14px 0}
+.fsel .fs{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;gap:3px;background:#fff;border:1px solid var(--line);border-radius:9px;padding:8px 4px;font-size:12.5px;color:var(--text);cursor:pointer}
+.fsel .fs:active{background:var(--bg)}
+.fsel .fs span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fsel .fs i{font-style:normal;color:var(--muted);font-size:10px}
+.navpg{display:flex;align-items:center;gap:8px;padding:8px 14px 0}
+.navpg .np{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--sub);font-size:14px}
+.navpg .np:active{background:var(--bg)}
+.navpg .np-t{flex:1;text-align:center;font-size:12px;color:var(--muted)}
+.navpg .np-a{color:var(--blue);font-size:12.5px;cursor:pointer;white-space:nowrap}
+/* 选择器列表 */
+.pick-row{display:flex;align-items:center;padding:11px 2px;border-bottom:1px solid var(--line-2);cursor:pointer}
+.pr-n{font-size:14px;color:var(--text)}
+.pick-row.on .pr-n{color:var(--blue);font-weight:600}
+.pr-s{font-size:11px;color:var(--muted);margin-top:3px}
+.pr-cur{font-size:10px;color:var(--blue);background:var(--blue-l);border-radius:3px;padding:0 4px;margin-left:4px}
+.pr-ck{margin-left:auto;color:var(--blue);font-weight:700}
+/* 结构概览 */
+/* 货架 */
+.shelf{background:#fff;border:1px solid var(--line);border-radius:13px;margin:10px 14px 0;overflow:hidden}
+.shelf-top{padding:10px 13px;border-bottom:1px solid var(--line-2);display:flex;align-items:center;gap:8px;background:#FAFBFC}
+.shelf-top .code{font-size:13px;font-weight:600;color:var(--text)}
+.shelf-top .path{font-size:11px;color:var(--muted);margin-top:2px}
+.shelf-top .tag{margin-left:auto;font-size:11px;background:var(--blue-l);color:var(--blue-d);padding:2px 8px;border-radius:4px}
+.floor{padding:10px 12px;border-bottom:1px solid var(--line-2)}
+.floor:last-child{border-bottom:none}
+.fl-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.fl-name{font-size:13px;font-weight:600;color:var(--text)}
+.fl-code{font-size:10.5px;color:var(--muted)}
+.fl-acts{margin-left:auto;display:flex;gap:6px}
+.fl-btn{width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:#fff;color:var(--sub);display:flex;align-items:center;justify-content:center;font-size:17px;line-height:1;cursor:pointer}
+.fl-btn.p{border-color:#9DBCF5;color:var(--blue);background:var(--blue-l)}
+.fl-btn.m{border-color:#F3C0C0;color:var(--red);background:#FEF6F6}
+.fl-btn:active{transform:scale(.92)}
+.bins{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.bin{border-radius:9px;padding:7px 6px 6px;min-height:56px;border:1px solid var(--line);background:#fff;cursor:pointer;position:relative;display:flex;flex-direction:column}
+.bin .b-no{font-size:11px;font-weight:600;color:var(--sub)}
+.bin .b-sku{font-size:10.5px;color:var(--text);line-height:1.35;margin-top:3px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical}
+.bin .b-meta{font-size:9.5px;color:var(--muted);margin-top:auto;padding-top:3px;display:flex;align-items:center;justify-content:space-between;gap:3px}
+.bin .bm-t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.bin .bm-s{flex:none;font-weight:600;color:var(--text)}
+.bin .bm-s.zero{color:#256FED}
+.bin.empty{background:#fff}
+.bin.used{background:var(--blue-l);border-color:#B9D2FB}
+.bin.used .b-no{color:var(--blue-d)}
+.bin.zero{background:#F7FAFF;border:1px dashed #9DBCF5}
+.bin.zero .b-no{color:var(--blue-d)}
+.bin.error{background:var(--red-bg);border-color:#FBC7C7}
+.bin.pick{border:1.5px solid var(--blue);box-shadow:0 0 0 2px rgba(37,111,237,.14)}
+.bin.sel{background:var(--blue);border-color:var(--blue)}
+.bin.sel .b-no,.bin.sel .b-sku,.bin.sel .b-meta{color:#fff}
+.bin .b-ck{position:absolute;bottom:5px;right:5px;color:var(--blue);display:none}
+.bin.sel .b-ck{display:block;color:#fff}
+.bin.picked{border:2px solid var(--blue);box-shadow:0 0 0 2px rgba(37,111,237,.16)}
+.bin.picked .b-ck{display:block;font-size:11px;font-weight:700}
+.lgd{display:flex;flex-wrap:wrap;gap:10px;padding:10px 14px 0;font-size:11px;color:var(--sub)}
+.lgd i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:4px;vertical-align:-1px;border:1px solid var(--line)}
+/* 步骤条 */
+.steps{display:flex;align-items:center;padding:2px 14px 0}
+.stp{flex:1;text-align:center;font-size:11px;color:var(--muted);position:relative}
+.stp .dot{width:22px;height:22px;border-radius:50%;background:#fff;border:1px solid var(--line);color:var(--muted);font-size:11px;line-height:20px;margin:0 auto 3px;font-weight:600;position:relative;z-index:2}
+.stp.on .dot{background:var(--blue);border-color:var(--blue);color:#fff}
+.stp.done .dot{background:var(--green);border-color:var(--green);color:#fff}
+.stp.on{color:var(--blue);font-weight:600}
+.stp::after{content:"";position:absolute;top:11px;left:50%;width:100%;height:2px;background:var(--line);z-index:1}
+.stp:last-child::after{display:none}
+/* 输入行 */
+.inp-row{display:flex;align-items:center;background:#fff;border-radius:10px;padding:0 10px;border:1px solid var(--line)}
+.inp-row input{flex:1;border:none;outline:none;font-size:14px;padding:11px 8px;background:transparent;color:var(--text);min-width:0}
+.inp-row input::placeholder{color:var(--muted)}
+.scan-btn{background:var(--blue-l);border:none;border-radius:8px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;color:var(--blue);cursor:pointer}
+/* 结果卡 */
+.rc{border-radius:11px;padding:11px 12px;margin-top:10px;font-size:13px;line-height:1.7;display:flex;gap:9px}
+.rc .ri{width:22px;height:22px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;margin-top:1px}
+.rc.ok{background:var(--green-bg);color:#4B8B2A}
+.rc.ok .ri{background:var(--green)}
+.rc.info{background:var(--blue-l);color:var(--blue-d)}
+.rc.info .ri{background:var(--blue)}
+.rc.warn{background:var(--amber-bg);color:#B88230}
+.rc.warn .ri{background:var(--amber)}
+.rc.err{background:var(--red-bg);color:#C45656}
+.rc.err .ri{background:var(--red)}
+.rc b{font-weight:600}
+/* sku 卡 */
+.sku-card{background:#fff;border:1px solid var(--line);border-radius:11px;padding:11px 12px;display:flex;gap:10px;margin-top:10px}
+.sku-card .sc-ico{width:38px;height:38px;border-radius:9px;background:var(--blue-l);color:var(--blue);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex:0 0 auto}
+.sku-card .sc-m{flex:1;min-width:0}
+.sku-card .sc-n{font-size:13.5px;font-weight:600;color:var(--text)}
+.sku-card .sc-d{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.5}
+.sku-card .sc-del{color:var(--muted);font-size:18px;line-height:1;padding:2px 4px;cursor:pointer}
+/* 日志 */
+.log{background:#fff;border:1px solid var(--line);border-radius:11px;margin:10px 14px 0;padding:11px 12px;display:flex;gap:10px;align-items:flex-start}
+.log-t{font-size:10.5px;padding:1px 6px;border-radius:3px;color:#fff;flex:0 0 auto;margin-top:2px}
+.log-m{flex:1;min-width:0}
+.log-m b{font-size:13px;font-weight:600;color:var(--text);display:block}
+.log-m .d{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.5}
+.log-act{font-size:11.5px;color:var(--blue);flex:0 0 auto;cursor:pointer;padding-top:2px}
+/* 弹层 */
+.mask{position:absolute;inset:0;background:rgba(0,0,0,.45);z-index:60;display:none}
+.mask.on{display:block}
+.dlg{position:absolute;left:18px;right:18px;top:50%;transform:translateY(-50%);background:#fff;border-radius:14px;z-index:70;padding:18px 16px 14px;display:none}
+.dlg.on{display:block}
+.dlg h4{font-size:16px;font-weight:600;text-align:center;margin-bottom:10px}
+.dlg-body{font-size:13px;color:var(--sub);line-height:1.8;max-height:320px;overflow-y:auto}
+.dlg-btns{display:flex;gap:10px;margin-top:16px}
+.dlg-btns .btn{flex:1}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:16px 16px 0 0;z-index:70;padding:16px 16px 18px;display:none;max-height:80%;overflow-y:auto}
+.sheet.on{display:block}
+.sh-t{font-size:16px;font-weight:600;text-align:center;margin-bottom:12px}
+.field{margin-bottom:12px}
+.field label{font-size:12.5px;color:var(--sub);display:block;margin-bottom:6px}
+.field input,.field select{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px;font-size:14px;outline:none;color:var(--text);background:#fff}
+.radio{display:block;padding:9px 0;border-bottom:1px solid var(--line-2);font-size:13.5px;cursor:pointer}
+/* toast */
+#toast{position:absolute;left:50%;bottom:78px;transform:translateX(-50%);background:rgba(0,0,0,.82);color:#fff;font-size:13px;padding:10px 16px;border-radius:8px;z-index:90;opacity:0;transition:opacity .2s;max-width:88%;text-align:center;line-height:1.6}
+#toast.on{opacity:1}
+/* 侧栏说明 */
+.aside{width:330px;font-size:13px;color:#4a4f5a;line-height:1.8}
+.aside h1{font-size:19px;color:#1f2430;margin-bottom:6px}
+.aside .sub{color:#7b8290;font-size:12px;margin-bottom:14px}
+.aside .box{background:#fff;border:1px solid #e3e6ec;border-radius:12px;padding:13px 15px;margin-bottom:12px}
+.aside .box h3{font-size:14px;color:#1f2430;margin-bottom:7px}
+.aside .box ul{padding-left:17px}
+.aside .box li{margin-bottom:4px}
+.aside code{background:#f1f3f7;padding:1px 5px;border-radius:4px;font-size:12px}
+.offline{position:absolute;top:0;left:0;right:0;background:var(--amber);color:#fff;font-size:11px;text-align:center;padding:3px;z-index:40;display:none}
+.offline.on{display:block}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="device">
+    <div class="screen">
+      <div class="screen-body">
+        <div class="statusbar"><span>09:41</span><span>🔋 78%　📶</span></div>
+        <div class="offline" id="offBar">网络已断开 · 操作写入本地待同步队列</div>
+        <div id="app"></div>
+        <div class="mask" id="mask" onclick="closeAll()"></div>
+        <div class="dlg" id="dlg"></div>
+        <div class="sheet" id="sheet"></div>
+        <div id="toast"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="aside">
+    <h1>PDA 库位管理 · 产品 Demo</h1>
+    <div class="sub">V1.0.50 · 库位结构维护 + 价签绑定（新绑/换绑/去绑）</div>
+    <div class="box">
+      <h3>入口路径</h3>
+      <ul>
+        <li><b>PDA 首页</b>（仓储作业）→ 仓储管理分组 → <b>库位管理（NEW）</b> → 模块首页 → 4 个子功能</li>
+        <li>首页其余入口（扫码收货/入库等）为本 Demo 占位，点击仅提示</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>模块结构</h3>
+      <ul>
+        <li><b>库位结构</b>：货架剖面图，层内货位增删、货架筛选切换</li>
+        <li><b>价签绑定</b>：扫商品 → 扫价签 → 扫层标 → 确认货位</li>
+        <li><b>绑定记录</b>：新绑/换绑/去绑流水（仅留痕，不可撤销）</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>演示说明</h3>
+      <ul>
+        <li>黄色虚线框内为<b>模拟扫码</b>按钮，等价于 PDA 扫描头识别结果</li>
+        <li>顶部可切换角色：上架员（仅绑定）/ 仓管组长（结构调整 + 去绑）</li>
+        <li>右上角「离线」可模拟断网与待同步队列</li>
+        <li>编号规则：<code>C01-K01-H01-01-01</code>（仓库-库区-货架-层级-货位）</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>关键规则</h3>
+      <ul>
+        <li>增加货位：追加到该层末尾，编号取 max+1</li>
+        <li>减少货位：空闲货位（无商品·无价签）即可删，不限末尾；有库存/已挂价签/有锁定库存则阻断</li>
+        <li>删除后编号不回收，避免历史单据错位</li>
+        <li>落位：默认末尾第一个空货位，可点选自由选位</li>
+        <li>去绑需组长以上权限且必填原因</li>
+        <li>零库存占用：价签仍绑商品、库存 0，可被换绑；删除需先去绑价签</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============ 基础 ============ */
+function $(s){return document.querySelector(s)}
+function toast(m){var t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast._t);toast._t=setTimeout(function(){t.classList.remove('on')},2300)}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function pad(n){return n<10?('0'+n):(''+n)}
+
+var USER={name:'张伟'};
+var ROLES=['上架员','仓管（组长）'];
+var ROLE='仓管（组长）';
+var OFFLINE=false;
+function setRole(r){ROLE=r;render();toast('已切换角色：'+r)}
+function toggleOffline(){OFFLINE=!OFFLINE;render();toast(OFFLINE?'已进入离线模式':'网络已恢复，待同步队列已提交')}
+
+/* ============ 库位数据（仓库-库区-货架-层级-货位） ============ */
+var WH_LIST=[
+  {code:'C01',name:'01号仓库',areas:[{code:'C01-K01',name:'01号库区'},{code:'C01-K02',name:'02号库区'}]},
+  {code:'C02',name:'02号仓库',areas:[{code:'C02-K01',name:'01号库区'}]}
+];
+function genLayers(lvN,binN){
+  var arr=[];
+  for(var i=0;i<lvN;i++){
+    var bins=[];
+    for(var j=0;j<binN;j++)bins.push({seq:j+1,state:'empty',sku:'',no:'',tag:'',stock:0});
+    arr.push({name:pad(i+1)+'号层级',code:'',bins:bins});
+  }
+  return arr;
+}
+function areaSeq(code){return (code.split('-')[1]||'01').replace('K','')}
+function shelfName(areaCode,seq){return areaSeq(areaCode)+pad(seq)+'号货架'}
+function newShelf(areaCode,seq,lvN,binN){
+  return {code:areaCode+'-H'+pad(seq),name:shelfName(areaCode,seq),areaCode:areaCode,layers:genLayers(lvN||3,binN||3)};
+}
+var SHELVES=[];
+SHELVES.push({code:'C01-K01-H01',name:'0101号货架',areaCode:'C01-K01',layers:[
+  {name:'01号层级',code:'',bins:[
+    {seq:1,state:'used',sku:'DMEM 高糖培养基',no:'AIWB-0011x',tag:'ESL-20230088',stock:12},
+    {seq:2,state:'used',sku:'PBS缓冲液 pH7.4',no:'AIWB-0031s',tag:'ESL-20230091',stock:6},
+    {seq:3,state:'used',sku:'胰蛋白酶-EDTA',no:'AIWB-0042e',tag:'ESL-20230115',stock:4}
+  ]},
+  {name:'02号层级',code:'',bins:[
+    {seq:1,state:'used',sku:'胎牛血清',no:'AIWB-0028t',tag:'ESL-20230102',stock:3},
+    {seq:2,state:'zero',sku:'青链霉素混合液 100X',no:'AIWB-0055p',tag:'ESL-20230121',stock:0},
+    {seq:3,state:'empty',sku:'',no:'',tag:'',stock:0}
+  ]},
+  {name:'03号层级',code:'',bins:[
+    {seq:1,state:'empty',sku:'',no:'',tag:'',stock:0},
+    {seq:2,state:'empty',sku:'',no:'',tag:'',stock:0},
+    {seq:3,state:'empty',sku:'',no:'',tag:'',stock:0}
+  ]}
+]});
+SHELVES.push(newShelf('C01-K01',2,3,3));
+SHELVES.push(newShelf('C01-K01',3,2,4));
+SHELVES.push(newShelf('C01-K02',1,3,3));
+SHELVES.push(newShelf('C02-K01',1,3,3));
+
+/* 当前上下文 */
+var LOC={wh:'01号仓库',whCode:'C01',area:'01号库区',areaCode:'C01-K01',shelfCode:'',shelfName:'',layers:[]};
+function shelvesIn(areaCode){return SHELVES.filter(function(s){return s.areaCode===areaCode})}
+function findShelf(code){var r=null;SHELVES.forEach(function(s){if(s.code===code)r=s});return r}
+function shelfStat(s){
+  var n=0,used=0,empty=0;
+  s.layers.forEach(function(l){l.bins.forEach(function(b){n++;if(b.state==='used')used++;if(b.state==='empty')empty++})});
+  return {total:n,used:used,empty:empty,lv:s.layers.length};
+}
+function selectWh(code){
+  var w=null;WH_LIST.forEach(function(x){if(x.code===code)w=x});
+  if(!w)return;
+  LOC.whCode=w.code;LOC.wh=w.name;
+  selectArea(w.areas[0].code);
+}
+function selectArea(code){
+  var w=null;WH_LIST.forEach(function(x){if(x.code===LOC.whCode)w=x});
+  var a=null;(w?w.areas:[]).forEach(function(x){if(x.code===code)a=x});
+  if(!a)return;
+  LOC.areaCode=a.code;LOC.area=a.name;
+  var list=shelvesIn(a.code);
+  if(list.length)selectShelf(list[0].code);
+  else{LOC.shelfCode='';LOC.shelfName='';LOC.layers=[];}
+}
+var SELBIN={li:-1,bi:-1};
+function selectShelf(code){
+  var s=findShelf(code);
+  if(!s)return;
+  LOC.shelfCode=s.code;LOC.shelfName=s.name;LOC.layers=s.layers;
+  LOC.areaCode=s.areaCode;
+  var w=null;WH_LIST.forEach(function(x){x.areas.forEach(function(a){if(a.code===s.areaCode){w=x;LOC.area=a.name}})});
+  if(w){LOC.whCode=w.code;LOC.wh=w.name;}
+  SELBIN={li:-1,bi:-1};
+}
+function shelfIndex(){
+  var list=shelvesIn(LOC.areaCode);
+  for(var i=0;i<list.length;i++)if(list[i].code===LOC.shelfCode)return i;
+  return -1;
+}
+function stepShelf(d){
+  var list=shelvesIn(LOC.areaCode);
+  if(!list.length)return;
+  var i=shelfIndex();
+  if(i<0)i=0;
+  var n=(i+d+list.length)%list.length;
+  selectShelf(list[n].code);
+  render();toast('已切换到 '+LOC.shelfName+'（'+(n+1)+'/'+list.length+'）');
+}
+function layerCode(li){return LOC.shelfCode+'-'+pad(li+1)}
+function binCode(li,b){return layerCode(li)+'-'+pad(b.seq)}
+function binCount(){var n=0;LOC.layers.forEach(function(l){n+=l.bins.length});return n}
+function countBy(state){var n=0;LOC.layers.forEach(function(l){l.bins.forEach(function(b){if(b.state===state)n++})});return n}
+/* 统计口径：空闲=无商品无价签；有价签=已绑商品（含零库存）。不存在「挂空签」状态 */
+function countFree(){return countBy('empty')}
+function countBound(){return countBy('used')+countBy('zero')}
+
+var LOGS=[
+  {t:'09:12',type:'换绑',sku:'DMEM 高糖培养基',tag:'ESL-20230088',bin:'C01-K01-H01-01-01',op:'张锐锋',sync:'已同步'},
+  {t:'08:47',type:'新绑',sku:'胎牛血清',tag:'ESL-20230102',bin:'C01-K01-H01-02-01',op:'张锐锋',sync:'已同步'},
+  {t:'08:20',type:'结构调整',sku:'新增货位',tag:'—',bin:'C01-K01-H01-03-01',op:'李明',sync:'已同步'}
+];
+function pushLog(type,sku,tag,bin){
+  LOGS.unshift({t:'刚刚',type:type,sku:sku,tag:tag||'—',bin:bin||'—',op:USER.name,sync:OFFLINE?'待同步':'已同步'});
+}
+
+var STATE_META={
+  empty:{label:'空闲',cls:'empty'},
+  used:{label:'已占用',cls:'used'},
+  zero:{label:'零库存',cls:'zero'},
+  error:{label:'异常',cls:'error'}
+};
+
+/* ============ 渲染：货架剖面图 ============ */
+function renderShelf(opt){
+  opt=opt||{};
+  if(!LOC.shelfCode||!LOC.layers.length){
+    return '<div class="shelf"><div style="padding:34px 16px;text-align:center">'+
+      '<div style="font-size:15px;font-weight:600">'+LOC.area+' 暂无货架</div>'+
+      '<div style="font-size:12px;color:#909399;margin-top:6px;line-height:1.7">货架由管理端后台维护，PDA 端不提供货架新增<br>请联系仓库管理员在后台创建后再回来维护层级与货位</div></div></div>';
+  }
+  var html='<div class="shelf"><div class="shelf-top"><div><div class="code">'+LOC.shelfName+'</div>'+
+    '<div class="path">'+LOC.wh+' / '+LOC.area+' / '+LOC.shelfCode+'</div></div>'+
+    '<div class="tag">'+LOC.layers.length+'层 · '+binCount()+'货位</div></div>';
+  for(var i=LOC.layers.length-1;i>=0;i--){
+    var lv=LOC.layers[i];
+    html+='<div class="floor"><div class="fl-head"><span class="fl-name">'+lv.name+'</span>'+
+      '<span class="fl-code">'+layerCode(i)+'</span>'+
+      '<div class="fl-acts">'+
+      '<div class="fl-btn p" onclick="addBin('+i+')">+</div>'+
+      '<div class="fl-btn m" onclick="delBin('+i+')">−</div>'+
+      '</div></div><div class="bins">';
+    lv.bins.forEach(function(b,j){
+      var m=STATE_META[b.state]||STATE_META.empty;
+      var cls=m.cls;
+      if(opt.pick&&opt.level===i&&BIND.bin===binCode(i,b))cls+=' sel';
+      else if(opt.pick&&opt.level===i&&pickable(i,b))cls+=' pick';
+      else if(!opt.pick&&SELBIN.li===i&&SELBIN.bi===j)cls+=' picked';
+      html+='<div class="bin '+cls+'" onclick="onBinTap('+i+','+j+')">'+
+        '<div class="b-no">'+pad(b.seq)+'</div>'+
+        (b.sku?'<div class="b-sku">'+esc(b.sku)+'</div>':'<div class="b-sku" style="color:#C0C4CC">'+m.label+'</div>')+
+        '<div class="b-meta">'+(b.tag?'<span class="bm-t">🏷 '+b.tag+'</span>':'')+
+          ((b.state==='used'||b.state==='zero')?'<span class="bm-s'+(b.state==='zero'?' zero':'')+'">'+b.stock+'件</span>':'')+'</div>'+
+        '<span class="b-ck">✓</span>'+
+        '</div>';
+    });
+    html+='</div></div>';
+  }
+  html+='</div>';
+  return html;
+}
+function pickable(li,b){
+  if(BIND.step!==4)return false;
+  return b.state==='empty'||b.state==='zero';
+}
+function onBinTap(li,bi){
+  var b=LOC.layers[li].bins[bi];
+  if(BIND.step===4&&pickable(li,b)){BIND.bin=binCode(li,b);render();toast('已选货位 '+BIND.bin);return;}
+  if(BIND.step===4&&!pickable(li,b)){toast(b.state==='used'?'该货位已占用：'+b.sku:'该货位不可选（'+STATE_META[b.state].label+'）');return;}
+  SELBIN={li:li,bi:bi};render();openBinDetail(li,bi);
+}
+
+/* ============ 库位结构操作 ============ */
+function needAdmin(){if(ROLE!=='仓管（组长）'){toast('当前角色无此操作权限，请联系仓库管理员');return true}return false}
+
+/* ---- 仓库 / 库区 / 货架 筛选器 ---- */
+var PICKER={type:'',kw:''};
+function openPicker(t){PICKER={type:t,kw:''};renderPicker()}
+function pickerRows(){
+  var kw=(PICKER.kw||'').trim().toLowerCase(),rows=[];
+  function hit(name,code){return !kw||name.toLowerCase().indexOf(kw)>=0||code.toLowerCase().indexOf(kw)>=0}
+  if(PICKER.type==='wh'){
+    WH_LIST.forEach(function(w){
+      if(!hit(w.name,w.code))return;
+      rows.push({code:w.code,name:w.name,sub:w.code,meta:'',cur:w.code===LOC.whCode,fn:'pickWh'});
+    });
+  }else if(PICKER.type==='area'){
+    var w=null;WH_LIST.forEach(function(x){if(x.code===LOC.whCode)w=x});
+    (w?w.areas:[]).forEach(function(a){
+      if(!hit(a.name,a.code))return;
+      rows.push({code:a.code,name:a.name,sub:a.code,meta:shelvesIn(a.code).length+' 个货架',cur:a.code===LOC.areaCode,fn:'pickArea'});
+    });
+  }else{
+    shelvesIn(LOC.areaCode).forEach(function(s){
+      if(!hit(s.name,s.code))return;
+      var st=shelfStat(s);
+      rows.push({code:s.code,name:s.name,sub:s.code,meta:st.lv+'层 · '+st.total+'货位 · 空闲'+st.empty,cur:s.code===LOC.shelfCode,fn:'pickShelf'});
+    });
+  }
+  return rows;
+}
+function renderPicker(){
+  var title={wh:'选择仓库',area:'选择库区',shelf:'选择货架'}[PICKER.type]||'选择';
+  var label={wh:'仓库',area:'库区',shelf:'货架'}[PICKER.type]||'';
+  var rows=pickerRows(),kw=PICKER.kw||'';
+  var html='<div class="sh-t">'+title+'</div>'+
+    '<div class="inp-row" style="margin-bottom:8px"><input id="pkKw" placeholder="输入'+label+'名称或编号搜索" value="'+esc(kw)+'" onkeydown="if(event.key===\'Enter\')pickerSearch(this.value)">'+
+    '<div class="scan-btn" onclick="pickerSearch(($(\'#pkKw\')||{}).value||\'\')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#256FED" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div></div>';
+  if(rows.length){
+    html+=rows.map(function(r){
+      return '<div class="pick-row '+(r.cur?'on':'')+'" onclick="'+r.fn+'(\''+r.code+'\')">'+
+        '<div style="min-width:0"><div class="pr-n">'+esc(r.name)+(r.cur?'<span class="pr-cur">当前</span>':'')+'</div>'+
+        '<div class="pr-s">'+esc(r.sub)+(r.meta?'　·　'+esc(r.meta):'')+'</div></div>'+
+        (r.cur?'<span class="pr-ck">✓</span>':'')+'</div>';
+    }).join('');
+  }else{
+    html+='<div style="text-align:center;color:#909399;font-size:13px;padding:26px 0">未找到匹配的'+label+'，请调整关键词</div>';
+  }
+  html+='<div class="btn-row" style="margin-top:10px"><button class="btn btn-ghost" onclick="closeAll()">关闭</button></div>';
+  openSheet(html);
+  var el=$('#pkKw');
+  if(el){el.focus();try{el.setSelectionRange(el.value.length,el.value.length)}catch(e){}}
+}
+function pickerSearch(v){PICKER.kw=v||'';renderPicker()}
+function pickWh(c){selectWh(c);closeAll();render();toast('已切换仓库：'+LOC.wh)}
+function pickArea(c){selectArea(c);closeAll();render();toast('已切换库区：'+LOC.area)}
+function pickShelf(c){selectShelf(c);closeAll();render();toast('已切换货架：'+LOC.shelfName)}
+
+function addBin(li){
+  if(needAdmin())return;
+  var lv=LOC.layers[li];
+  if(lv.bins.length>=20){toast('单层货位数量已达上限（20），如需扩展请在后台新增层级');return;}
+  var max=0;lv.bins.forEach(function(b){if(b.seq>max)max=b.seq});
+  lv.bins.push({seq:max+1,state:'empty',sku:'',no:'',tag:'',stock:0});
+  pushLog('结构调整','新增货位','—',layerCode(li)+'-'+pad(max+1));
+  render();
+  toast('已新增货位 '+layerCode(li)+'-'+pad(max+1)+'（追加到本层末尾）');
+}
+/* 删除货位：只要货位「空闲」（无商品、无价签）即可删除，不限末尾 */
+function delBin(li){delBinAt(li,LOC.layers[li].bins.length-1)}
+function delBinAt(li,bi){
+  if(needAdmin())return;
+  var lv=LOC.layers[li],b=lv.bins[bi];
+  if(!b)return;
+  if(lv.bins.length<=1){toast('该层级至少需保留 1 个货位');return;}
+  var code=layerCode(li)+'-'+pad(b.seq);
+  if(b.state==='used'){toast('该货位存在关联库存，需清空后才能删除');return;}
+  if(b.tag){toast('该货位已绑定价签 '+b.tag+'，请先去绑后再删除');return;}
+  var isLast=(bi===lv.bins.length-1);
+  openConfirm('删除货位','<div style="font-size:13px;line-height:1.9">确认删除'+(isLast?'末尾':'')+'货位 <b>'+code+'</b>？'+
+    (isLast?'':'<br><span style="color:#E6A23C;font-size:12px">该货位非本层末尾，删除后本层编号将出现断号。</span>')+
+    '<br><span style="color:#909399;font-size:12px">删除后编号不回收，新增货位将继续取 max+1，历史作业记录保留。</span></div>',
+    '确认删除',function(){
+      lv.bins.splice(bi,1);
+      SELBIN={li:-1,bi:-1};
+      pushLog('结构调整','删除货位','—',code);
+      closeAll();render();toast('已删除货位 '+code);
+    });
+}
+function openBinDetail(li,bi){
+  var b=LOC.layers[li].bins[bi],code=binCode(li,b),m=STATE_META[b.state];
+  var body='<div class="sh-t">货位详情</div>'+
+    '<div style="font-size:13px;line-height:1.9">'+
+    '<div>货位编号：<b>'+code+'</b></div>'+
+    '<div>所属路径：'+LOC.wh+' / '+LOC.area+' / '+LOC.shelfCode+' / '+LOC.layers[li].name+'</div>'+
+    '<div>状态：<b>'+m.label+'</b></div>'+
+    '<div>绑定商品：'+(b.sku?esc(b.sku)+'（'+b.no+'）':'—')+'</div>'+
+    '<div>库存数量：'+(b.stock||0)+' 件</div>'+
+    '<div>绑定价签：'+(b.tag?b.tag:'—')+'</div></div>'+
+    (b.state==='zero'?'<div class="alert a-blue" style="margin:10px 0 0">零库存占用：价签仍绑定该商品，补货后可直接上架，无需重新绑定。如需释放货位，请先去绑价签。</div>':'');
+  var acts='<div class="btn-row">'+
+    (b.tag?'<button class="btn btn-danger" onclick="closeAll();gotoUnbind(\''+b.tag+'\')">去绑价签</button>':'<button class="btn btn-primary" onclick="closeAll();startBindFrom('+li+','+bi+')">绑定价签</button>')+'</div>'+
+    (b.state==='empty'&&LOC.layers[li].bins.length>1?'<div class="btn-row"><button class="btn btn-danger" onclick="closeAll();delBinAt('+li+','+bi+')">删除货位</button></div>'+
+      '<div style="font-size:11.5px;color:#909399;text-align:center">该货位为空闲状态（无商品·无价签），可自由删除</div>':'');
+  openSheet(body+acts);
+}
+
+/* ============ 价签绑定 ============ */
+var SKUS=[
+  {name:'DMEM 高糖培养基',brand:'Gibco',no:'AIWB-0011x',spec:'500ml/瓶',unit:'瓶'},
+  {name:'PBS缓冲液 pH7.4',brand:'Gibco',no:'AIWB-0031s',spec:'500ml/瓶',unit:'瓶'},
+  {name:'碳吸附胎牛血清',brand:'Perfemiker',no:'AIWB-0028t',spec:'5mg/瓶',unit:'瓶'}
+];
+var BIND={step:0,queue:[],tag:'',tagState:null,oldSku:null,level:-1,bin:'',reason:'',note:''};
+function resetBind(){BIND={step:0,queue:[],tag:'',tagState:null,oldSku:null,level:-1,bin:'',reason:'',note:'',fromBin:null}}
+function startBind(){resetBind();go('bind')}
+/* 从货位详情进入：预置目标货位，扫层标后仍落在所选货位 */
+function startBindFrom(li,bi){
+  resetBind();
+  BIND.fromBin={li:li,bi:bi};
+  BIND.level=li;
+  BIND.bin=binCode(li,LOC.layers[li].bins[bi]);
+  go('bind');
+}
+
+function scanSku(i){
+  var s=SKUS[i];
+  var existed=null;
+  BIND.queue.forEach(function(q){if(q.no===s.no)existed=q});
+  if(existed){existed.qty++;toast('已扫 '+s.name+'（累计 '+existed.qty+' 件）');}
+  else{BIND.queue.push({name:s.name,brand:s.brand,no:s.no,spec:s.spec,unit:s.unit,qty:1});toast('已扫商品：'+s.name);}
+  BIND.step=1;render();
+}
+function scanTag(kind){
+  if(BIND.queue.length===0){toast('请先扫描商品二维码');return;}
+  if(kind==='free'){BIND.tag='ESL-2024'+String(1000+Math.floor(Math.random()*9000));BIND.tagState='free';BIND.oldSku=null;BIND.step=3;toast('扫价签 '+BIND.tag+'：空闲，判定【新绑】');}
+  else if(kind==='same'){BIND.tag='ESL-20230088';BIND.tagState='same';BIND.oldSku='DMEM 高糖培养基';BIND.step=2;toast('扫价签 '+BIND.tag+'：已绑定同一商品');}
+  else if(kind==='other'){BIND.tag='ESL-20230091';BIND.tagState='other';BIND.oldSku='PBS缓冲液 pH7.4';BIND.step=2;toast('扫价签 '+BIND.tag+'：已绑其他商品，判定【换绑】');}
+  else if(kind==='fault'){BIND.tag='ESL-20240999';BIND.tagState='fault';BIND.step=2;toast('扫价签：通讯异常，操作阻断');}
+  render();
+}
+function confirmSwap(){
+  openConfirm('确认换绑',
+    '<div style="font-size:13px;line-height:1.9">价签 <b>'+BIND.tag+'</b><br>旧商品：<b>'+BIND.oldSku+'</b>（原绑定置为失效）<br>新商品：<b>'+BIND.queue[0].name+'</b><br><span style="color:#909399;font-size:12px">换绑后需重新扫描层标确认货位。</span></div>',
+    '确认换绑',function(){
+      closeAll();BIND.step=3;render();toast('已确认换绑，请扫描货架层级标签');
+    });
+}
+function openUnbind(){
+  if(ROLE!=='仓管（组长）'){toast('去绑仅组长以上可操作（当前：'+ROLE+'）');return;}
+  BIND.reason='';BIND.note='';
+  openSheet('<div class="sh-t">去绑原因（必填）</div>'+
+    '<div style="font-size:13px;margin-bottom:8px">解绑价签 <b>'+BIND.tag+'</b> 与商品 <b>'+BIND.oldSku+'</b></div>'+
+    ['商品下架','价签损坏','绑定错误','陈列调整','其他'].map(function(r){return '<label class="radio"><input type="radio" name="ubR" value="'+r+'" onchange="BIND.reason=\''+r+'\'"> '+r+'</label>'}).join('')+
+    '<div class="field" style="margin-top:10px"><input id="ubNote" placeholder="原因选「其他」时必填说明" oninput="BIND.note=this.value"></div>'+
+    '<label class="radio" style="border:none"><input type="checkbox" checked> 同步释放货位</label>'+
+    '<div class="btn-row"><button class="btn btn-ghost" onclick="closeAll()">取消</button><button class="btn btn-danger" onclick="doUnbind()">确认去绑</button></div>');
+}
+function doUnbind(){
+  if(!BIND.reason){toast('请选择去绑原因');return;}
+  if(BIND.reason==='其他'&&!BIND.note.trim()){toast('「其他」需填写说明');return;}
+  setTagFree(BIND.tag);
+  pushLog('去绑',BIND.oldSku,BIND.tag,'—');
+  closeAll();BIND.step=5;render();toast('已解绑价签 '+BIND.tag+'，墨水屏已清空');
+}
+function setTagFree(tag){
+  LOC.layers.forEach(function(l){l.bins.forEach(function(b){
+    if(b.tag===tag){b.tag='';b.sku='';b.no='';b.stock=0;b.state='empty';}
+  })});
+}
+function gotoUnbind(tag){
+  BIND={step:2,queue:[],tag:tag,tagState:'same',oldSku:'',level:-1,bin:'',reason:'',note:''};
+  var found='';
+  LOC.layers.forEach(function(l){l.bins.forEach(function(b){if(b.tag===tag){found=b.sku}})});
+  BIND.oldSku=found||'（未绑商品）';
+  go('bind');setTimeout(openUnbind,150);
+}
+function scanLevel(li){
+  BIND.level=li;
+  var lv=LOC.layers[li],free=null,zero=null,preset=false;
+  /* 若从货位详情进来且扫的是同一层，优先落在所选货位 */
+  if(BIND.fromBin&&BIND.fromBin.li===li){
+    var pre=lv.bins[BIND.fromBin.bi];
+    if(pre&&(pre.state==='empty'||pre.state==='zero')){free=pre;preset=true;}
+  }
+  if(!free){
+    /* 否则追加到末尾：优先真正空闲货位，其次零库存货位（可换绑） */
+    lv.bins.forEach(function(b){
+      if(b.state==='empty')free=b;
+      else if(b.state==='zero')zero=b;
+    });
+    if(!free)free=zero;
+  }
+  if(!free){
+    BIND.step=4;BIND.bin='';render();
+    toast('该层级货位已满，请扫描其他层级标签或先新增货位');return;
+  }
+  BIND.bin=binCode(li,free);
+  BIND.step=4;render();
+  toast('已定位 '+LOC.shelfCode+' / '+lv.name+' · '+(preset?'使用所选货位 ':'自动分配末尾空位 ')+BIND.bin+(free.state==='zero'?'（零库存货位，将按换绑处理）':''));
+}
+function pickBin(li,bi){
+  var b=LOC.layers[li].bins[bi];
+  if(b.state==='empty'||b.state==='zero'){BIND.bin=binCode(li,b);render();toast('已选货位 '+BIND.bin);}
+  else toast('该货位已占用：'+b.sku);
+}
+function confirmBind(){
+  if(!BIND.bin){toast('请选择货位');return;}
+  var sku=BIND.queue[0];
+  var li=BIND.level,bn=parseInt(BIND.bin.split('-').pop(),10),target=null;
+  LOC.layers[li].bins.forEach(function(b){if(b.seq===bn)target=b});
+  var type=(BIND.tagState==='other'||(target&&target.state==='zero'&&target.sku&&target.sku!==sku.name))?'换绑':(BIND.tagState==='same'?'位置更新':'新绑');
+  openConfirm('确认绑定',
+    '<div style="font-size:13px;line-height:1.9">商品：<b>'+esc(sku.name)+'</b><br>价签：<b>'+BIND.tag+'</b><br>货位：<b>'+BIND.bin+'</b><br>操作类型：<b>'+type+'</b>'+
+    (target&&target.state==='zero'?'<br><span style="color:#256FED;font-size:12px">该货位为「零库存占用」（原绑定：'+esc(target.sku||'—')+'），本次将按换绑处理。</span>':'')+
+    '<br><span style="color:#909399;font-size:12px">确认后推送商品信息到墨水屏并写入绑定审计日志。</span></div>',
+    '确认绑定',function(){
+      LOC.layers.forEach(function(l){l.bins.forEach(function(b){
+        if(b.tag===BIND.tag&&binCode(LOC.layers.indexOf(l),b)!==BIND.bin){b.tag='';if(b.state==='used'&&!b.stock)b.state='empty';}
+      })});
+      LOC.layers[li].bins.forEach(function(b){if(b.seq===bn){b.tag=BIND.tag;b.sku=sku.name;b.no=sku.no;b.state='used';b.stock=(b.stock||0)+sku.qty}});
+      pushLog(type,sku.name,BIND.tag,BIND.bin);
+      BIND.queue.shift();
+      closeAll();BIND.step=5;render();
+      toast('绑定成功：'+sku.name+' × '+BIND.tag+' × '+BIND.bin);
+    });
+}
+
+
+/* ============ 弹层 ============ */
+var _okFn=null;
+function openConfirm(title,html,okText,fn){
+  _okFn=fn;
+  $('#dlg').innerHTML='<h4>'+title+'</h4><div class="dlg-body">'+html+'</div>'+
+    '<div class="dlg-btns"><button class="btn btn-ghost" onclick="closeAll()">取消</button><button class="btn btn-primary" onclick="dlgOk()">'+okText+'</button></div>';
+  $('#dlg').classList.add('on');$('#mask').classList.add('on');
+}
+function dlgOk(){if(_okFn)_okFn();}
+function openSheet(html){$('#sheet').innerHTML=html;$('#sheet').classList.add('on');$('#mask').classList.add('on')}
+function closeAll(){$('#dlg').classList.remove('on');$('#sheet').classList.remove('on');$('#mask').classList.remove('on');_okFn=null}
+
+/* ============ 页面 ============ */
+var CUR='pdaHome';
+function go(p){CUR=p;render()}
+function render(){
+  $('#app').innerHTML=(PAGES[CUR]||PAGES.pdaHome)();
+  $('#offBar').classList.toggle('on',OFFLINE);
+  var sb=$('.screen-body');if(sb)sb.scrollTop=0;
+  var pg=$('.page');if(pg)pg.scrollTop=0;
+}
+var PAGES={};
+
+/* ---- PDA 首页（工作台） ---- */
+function demoOnly(name){toast('本 Demo 聚焦「库位管理」模块，'+name+'见《PDA产品设计Demo》')}
+PAGES.pdaHome=function(){
+  var rcv=[['扫码收货','📦','扫面单·清点赋码'],['扫码入库','📥','含上架绑价签'],['待收货列表','🧾','收货跟进'],
+           ['待入库列表','📋','入库跟进'],['签收异常','⚠️','异常提报'],['补打标签','🏷','标签补打']];
+  return '<div class="page on">'+
+  '<div class="nav" style="border:none"><div class="nav-row">'+
+    '<div><div class="nav-title">仓储作业</div></div>'+
+    '<div style="font-size:12px;color:'+(OFFLINE?'#E6A23C':'#909399')+';cursor:pointer" onclick="toggleOffline()">'+(OFFLINE?'离线中':'在线')+'</div>'+
+  '</div></div>'+
+  '<div class="hero"><div class="hh-row"><div class="hh-ava">'+USER.name.charAt(0)+'</div>'+
+    '<div><div class="hh-name">'+USER.name+'</div><div class="hh-wel">'+LOC.wh+'　·　'+ROLE+'</div></div>'+
+    '<div style="margin-left:auto;color:#fff;font-size:11.5px;opacity:.9">'+LOC.shelfName+'</div>'+
+  '</div></div>'+
+  '<div class="sec"><div class="sec-t">收货管理</div><div class="grid">'+
+    rcv.map(function(i){return '<div class="g-item" onclick="demoOnly(\''+i[0]+'\')"><div class="g-ico">'+i[1]+'</div><span>'+i[0]+'</span><i class="g-sub">'+i[2]+'</i></div>'}).join('')+
+  '</div></div>'+
+  '<div class="sec"><div class="sec-t">仓储管理</div><div class="grid">'+
+    '<div class="g-item wide" onclick="go(\'locHome\')"><div class="g-ico">🗄</div>'+
+    '<div class="g-txt"><span>库位管理</span><i class="g-sub">库位结构 · 价签绑定 · 货架筛选</i></div>'+
+    '<em class="g-new">NEW</em></div>'+
+  '</div></div>'+
+  '<div class="sec"><div class="alert a-blue" style="margin:0">点击「库位管理」进入模块：库位结构维护（层内货位增删、货架筛选）与价签绑定（新绑/换绑/去绑）。</div></div>'+
+  '<div class="sec"><div class="note">移动端新增入口权限点：<b>库位管理-模块入口</b>；子权限：结构调整、价签去绑。</div></div>'+
+  '<div style="height:20px"></div></div>';
+};
+
+/* ---- 库位管理模块首页 ---- */
+PAGES.locHome=function(){
+  var roleChips=ROLES.map(function(r){return '<div class="chip '+(ROLE===r?'on':'')+'" onclick="setRole(\''+r+'\')">'+r+'</div>'}).join('');
+  return '<div class="page on">'+
+  '<div class="nav"><div class="nav-row">'+
+    '<div class="nav-back" onclick="go(\'pdaHome\')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#303133" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></div>'+
+    '<div class="nav-title">库位管理</div>'+
+    '<div style="font-size:12px;color:'+(OFFLINE?'#E6A23C':'#909399')+';cursor:pointer" onclick="toggleOffline()">'+(OFFLINE?'离线中':'在线')+'</div>'+
+  '</div></div>'+
+  '<div class="hero"><div class="hh-row"><div class="hh-ava">'+USER.name.charAt(0)+'</div>'+
+    '<div><div class="hh-name">'+USER.name+'</div><div class="hh-wel">'+LOC.wh+' · 库位管理</div></div>'+
+    '<div style="margin-left:auto;color:#fff;font-size:12px;opacity:.9;cursor:pointer" onclick="toggleOffline()">'+(OFFLINE?'离线中':'在线 · 点击模拟离线')+'</div>'+
+  '</div></div>'+
+  '<div class="hero-band"><div class="hb-ico">🏬</div><div class="hb-txt"><b>'+LOC.shelfName+'（'+LOC.shelfCode+'）</b>'+
+    '<span>当前结构 '+LOC.layers.length+' 层 · '+binCount()+' 个货位　|　空闲 '+countFree()+' · 有价签 '+countBound()+'（含零库存 '+countBy('zero')+'）</span></div></div>'+
+  '<div class="sec"><div class="sec-t">角色（演示切换）</div><div class="chips" style="padding:0">'+roleChips+'</div></div>'+
+  '<div class="sec"><div class="sec-t">库位管理</div><div class="grid">'+
+    '<div class="g-item" onclick="go(\'loc\')"><div class="g-ico">🗄</div><span>库位结构</span><i class="g-sub">货架/层/货位增删</i></div>'+
+    '<div class="g-item" onclick="startBind()"><div class="g-ico">🏷</div><span>价签绑定</span><i class="g-sub">新绑/换绑/去绑</i></div>'+
+    '<div class="g-item" onclick="go(\'logs\')"><div class="g-ico">📋</div><span>绑定记录</span><i class="g-sub">绑定流水留痕</i></div>'+
+  '</div></div>'+
+  '<div class="sec"><div class="note"><b>模块定位：</b>在货架前完成库位结构调整与「商品 ↔ 价签 ↔ 货位」关系维护，不产生库存变动（库存变动走扫码入库/出库/盘点）。<br><b>作业顺序：</b>扫商品 → 扫价签 → 扫层标 → 确认货位。</div></div>'+
+  '<div style="height:20px"></div></div>';
+};
+
+PAGES.loc=function(){
+  var canEdit=ROLE==='仓管（组长）';
+  var list=shelvesIn(LOC.areaCode),idx=shelfIndex();
+  return '<div class="page on"><div class="nav"><div class="nav-row">'+
+    '<div class="nav-back" onclick="go(\'locHome\')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#303133" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></div>'+
+    '<div class="nav-title">库位结构</div><div style="width:34px"></div></div>'+
+    '<div class="nav-sub">'+ROLE+'　·　点击可切换仓库 / 库区 / 货架</div></div>'+
+  '<div class="fsel">'+
+    '<div class="fs" onclick="openPicker(\'wh\')"><span>'+LOC.wh+'</span><i>▾</i></div>'+
+    '<div class="fs" onclick="openPicker(\'area\')"><span>'+LOC.area+'</span><i>▾</i></div>'+
+    '<div class="fs" onclick="openPicker(\'shelf\')"><span>'+(LOC.shelfName||'选择货架')+'</span><i>▾</i></div>'+
+  '</div>'+
+  '<div class="navpg">'+
+    '<div class="np" onclick="stepShelf(-1)">‹</div>'+
+    '<div class="np-t">'+(list.length?((idx+1)+'/'+list.length+' · '+LOC.shelfCode):'当前库区暂无货架')+'</div>'+
+    '<div class="np" onclick="stepShelf(1)">›</div>'+
+  '</div>'+
+  renderShelf()+
+  '<div class="lgd">'+
+    '<span><i style="background:#fff"></i>空闲（无商品·无价签）</span>'+
+    '<span><i style="background:#E8F0FE;border-color:#B9D2FB"></i>已绑商品（库存 &gt; 0）</span>'+
+    '<span><i style="background:#F7FAFF;border:1px dashed #9DBCF5"></i>零库存（已绑商品·0 件）</span>'+
+  '</div>'+
+  '<div style="font-size:10.5px;color:#909399;padding:2px 14px 0">价签只在绑定商品时才会落到货位上，不存在「挂空签」；「已绑商品」与「零库存」一并计入「有价签」统计</div>'+
+  '<div style="font-size:11.5px;color:#909399;text-align:center;padding:2px 0 2px">层级与货架由后台维护（不可新增/删除），PDA 端仅在本层内增删货位</div>'+
+  (canEdit?'':'<div class="alert a-amber">当前角色为「上架员」，仅可查看结构；增删货位需仓管（组长）以上权限。</div>')+
+  '<div class="sim"><div class="st">💡 演示 · 结构调整</div><div class="sim-c">'+
+    '<div class="sc" onclick="addBin(1)">第2层 + 加货位</div>'+
+    '<div class="sc" onclick="delBin(2)">第3层 − 减货位（二次确认）</div>'+
+    '<div class="sc" onclick="delBin(0)">第1层 − 减货位（有库存·阻断）</div>'+
+    '<div class="sc" onclick="openPicker(\'shelf\')">切换/搜索货架</div>'+
+    '<div class="sc" onclick="openPicker(\'wh\')">切换仓库</div>'+
+    '<div class="sc" onclick="openBinDetail(1,1)">查看零库存货位</div>'+
+  '</div></div>'+
+  '<div class="sec"><div class="note"><b>筛选规则：</b>① 三级联动：仓库 → 库区 → 货架，切换后自动刷新货架图与统计；② 支持按名称/编号模糊搜索，命中数据的上下级一并展示；③ ‹ › 快速切换同库区货架；④ 结构操作只对「当前选中货架」生效；⑤ 货架与层级的新增/删除由管理端后台维护，PDA 端只做层内货位调整。</div></div>'+
+  '<div class="sec"><div class="note"><b>规则：</b>① 新增货位追加到该层末尾，编号取 max+1（如 -02-04）；② 只要货位「空闲」（无商品·无价签）即可删除，不限末尾；有库存/已绑价签则阻断；③ 删除后编号不回收，历史记录保留；④ 单层 ≤20 货位，单货架 ≤200；⑤ 层级与货架的新增/删除由后台维护，PDA 端只做层内货位增删；⑥ 统计口径：空闲=无商品无价签，有价签=已绑商品（含零库存），空闲+有价签=货位总数；价签仅在绑定商品时落到货位，不存在「挂空签」状态；⑦ 货位格内展示「价签号 + 库存件数」（如 `🏷 ESL-20230088　12件`）；⑧ 零库存货位同样「已绑定价签」：价签仍绑着原商品、只是库存为 0，因此计入「有价签」，可作为换绑目标，但删除前需先去绑价签。</div></div>'+
+  '<div style="height:20px"></div></div>';
+};
+
+PAGES.bind=function(){
+  var b=BIND,html='';
+  var steps=['扫商品','扫价签','扫层标','选货位'];
+  var cur=b.step<=1?b.step:(b.step===2?1:(b.step===3?2:3));
+  html+='<div class="page on"><div class="nav"><div class="nav-row">'+
+    '<div class="nav-back" onclick="go(\'locHome\')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#303133" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></div>'+
+    '<div class="nav-title">价签绑定</div><div class="nav-act" onclick="resetBind();render();toast(\'已重置\')">重置</div></div>'+
+    '<div class="nav-sub">'+LOC.shelfName+'　·　顺序：商品 → 价签 → 层标 → 货位</div></div>'+
+    '<div class="steps" style="margin-top:8px">'+
+      steps.map(function(s,i){return '<div class="stp '+(i<cur?'done':(i===cur?'on':''))+'"><div class="dot">'+(i<cur?'✓':(i+1))+'</div>'+s+'</div>'}).join('')+
+    '</div>';
+
+  /* Step5 完成 */
+  if(b.step===5){
+    var last=LOGS[0]||{};
+    return html+'<div style="padding:36px 20px;text-align:center">'+
+      '<div style="width:62px;height:62px;border-radius:50%;background:#E8F5E9;color:#2E7D32;font-size:30px;line-height:62px;margin:0 auto 14px">✓</div>'+
+      '<div style="font-size:17px;font-weight:600">'+(last.type||'操作')+'已完成</div>'+
+      '<div style="font-size:12.5px;color:#909399;margin-top:8px;line-height:1.9">墨水屏已刷新商品信息<br>已写入 bind_audit_log<br>操作人：'+USER.name+'（'+ROLE+'）'+(OFFLINE?'<br><span style="color:#E6A23C">离线：已加入待同步队列</span>':'')+'</div>'+
+      '<div style="margin:18px 0 0">'+
+      (b.queue.length?'<button class="btn btn-primary btn-full" onclick="contNext()">继续下一个（还剩 '+b.queue.length+' 件）</button>':'<button class="btn btn-primary btn-full" onclick="startBind()">继续扫描下一个商品</button>')+
+      '</div>'+
+      '<button class="btn btn-ghost btn-full" style="margin-top:10px" onclick="go(\'logs\')">查看绑定记录</button>'+
+      '<button class="btn btn-ghost btn-full" style="margin-top:10px" onclick="go(\'locHome\')">返回库位管理</button>'+
+      '<button class="btn btn-ghost btn-full" style="margin-top:10px" onclick="go(\'pdaHome\')">返回 PDA 首页</button>'+
+      '</div></div>';
+  }
+
+  html+='<div style="padding:12px 14px 0">';
+
+  /* 商品卡片 */
+  if(b.queue.length){
+    html+='<div class="sec-t" style="margin-bottom:8px">已扫商品（连续扫码自动聚合）</div>';
+    html+=b.queue.map(function(q,i){
+      return '<div class="sku-card"><div class="sc-ico">'+esc(q.unit)+'</div><div class="sc-m">'+
+        '<div class="sc-n">'+esc(q.name)+' ×'+q.qty+'</div>'+
+        '<div class="sc-d">'+esc(q.brand)+' · '+esc(q.no)+' · '+esc(q.spec)+'</div></div>'+
+        '<div class="sc-del" onclick="BIND.queue.splice('+i+',1);render()">×</div></div>';
+    }).join('');
+  }
+
+  /* Step0 扫商品 */
+  if(b.step===0){
+    html+='<div class="sec-t" style="margin:14px 0 8px">1 扫商品二维码</div>'+
+      '<div class="inp-row"><input placeholder="扫描商品标签码 / 商品条码"><div class="scan-btn" onclick="toast(\'调起 PDA 扫描头…\')"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#256FED" stroke-width="2"><path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2M7 12h10M7 16h6M7 8h10"/></svg></div></div>'+
+      '<div class="sim"><div class="st">💡 演示 · 模拟扫商品</div><div class="sim-c">'+
+        SKUS.map(function(s,i){return '<div class="sc" onclick="scanSku('+i+')">'+esc(s.name)+'</div>'}).join('')+
+      '</div></div>';
+  }
+
+  /* Step1 扫价签 */
+  if(b.step===1){
+    html+='<div class="sec-t" style="margin:14px 0 8px">2 扫价签二维码（系统自动判定）</div>'+
+      '<div class="inp-row"><input placeholder="扫描价签 ESL 编号" value="'+esc(b.tag)+'"><div class="scan-btn" onclick="toast(\'调起 PDA 扫描头…\')"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#256FED" stroke-width="2"><path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2M7 12h10M7 16h6M7 8h10"/></svg></div></div>'+
+      '<div class="sim"><div class="st">💡 演示 · 模拟扫价签（4 种状态）</div><div class="sim-c">'+
+        '<div class="sc" onclick="scanTag(\'free\')">空闲价签 → 新绑</div>'+
+        '<div class="sc" onclick="scanTag(\'same\')">已绑同品 → 无需操作</div>'+
+        '<div class="sc" onclick="scanTag(\'other\')">已绑他品 → 换绑</div>'+
+        '<div class="sc" onclick="scanTag(\'fault\')">故障价签 → 阻断</div>'+
+      '</div></div>';
+  }
+
+  /* Step2 判定结果 */
+  if(b.step===2){
+    if(b.tagState==='same'){
+      html+='<div class="rc info"><div class="ri">i</div><div>价签 <b>'+b.tag+'</b> 已绑定同一商品 <b>'+esc(b.oldSku)+'</b><br>无需重复绑定。可继续下一个，或更新价签所在货位。</div></div>'+
+        '<div class="btn-row"><button class="btn btn-ghost" onclick="startBind()">继续下一个</button>'+
+        '<button class="btn btn-primary" onclick="BIND.step=3;render();toast(\'请扫描货架层级标签\')">更新位置</button></div>'+
+        '<div class="btn-row" style="margin-top:-4px"><button class="btn btn-danger" onclick="openUnbind()">去绑该价签</button></div>';
+    }else if(b.tagState==='other'){
+      html+='<div class="rc warn"><div class="ri">!</div><div>价签 <b>'+b.tag+'</b> 当前绑定其他商品<br>旧商品：<b>'+esc(b.oldSku)+'</b><br>新商品：<b>'+esc(b.queue[0]?b.queue[0].name:'—')+'</b><br>确认后旧绑定置为失效。</div></div>'+
+        '<button class="btn btn-primary btn-full" style="margin-top:12px" onclick="confirmSwap()">确认换绑</button>'+
+        '<button class="btn btn-ghost btn-full" style="margin-top:10px" onclick="BIND.step=1;render()">重扫其他价签</button>';
+    }else if(b.tagState==='fault'){
+      html+='<div class="rc err"><div class="ri">!</div><div>价签 <b>'+b.tag+'</b> 通讯异常 / 电量耗尽 / 标签损坏<br>当前操作已阻断，请更换价签后重新扫描。</div></div>'+
+        '<button class="btn btn-ghost btn-full" style="margin-top:12px" onclick="BIND.step=1;render()">重新扫描价签</button>'+
+        '<button class="btn btn-danger btn-full" style="margin-top:10px" onclick="toast(\'已提报价签故障工单：'+b.tag+'\')">提报价签故障</button>';
+    }
+  }
+
+  /* Step3 扫层标 */
+  if(b.step===3){
+    html+='<div class="rc ok"><div class="ri">✓</div><div>价签 <b>'+b.tag+'</b> 已识别，判定：<b>'+(b.tagState==='other'?'换绑':(b.tagState==='same'?'位置更新':'新绑'))+'</b><br>请扫描货架层级标签（贴在层板侧面）。</div></div>'+
+      '<div class="sec-t" style="margin:14px 0 8px">3 扫货架层级标签</div>'+
+      '<div class="inp-row"><input placeholder="扫描层标" value="'+(b.level>=0?layerCode(b.level):'')+'"><div class="scan-btn" onclick="toast(\'调起 PDA 扫描头…\')"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#256FED" stroke-width="2"><path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2M7 12h10M7 16h6M7 8h10"/></svg></div></div>'+
+      '<div class="sim"><div class="st">💡 演示 · 模拟扫层标</div><div class="sim-c">'+
+        LOC.layers.map(function(l,i){return '<div class="sc" onclick="scanLevel('+i+')">'+l.name+'</div>'}).join('')+
+      '</div></div>';
+  }
+
+  /* Step4 选货位 */
+  if(b.step===4){
+    html+='<div class="sec-t" style="margin:14px 0 8px">4 确认价签位置'+(b.level>=0?'（'+LOC.layers[b.level].name+'）':'')+'</div>';
+    if(b.level>=0){
+      html+=renderShelf({pick:true,level:b.level});
+      var isPreset=!!(b.fromBin&&b.bin===binCode(b.fromBin.li,LOC.layers[b.fromBin.li].bins[b.fromBin.bi]));
+      html+='<div style="font-size:12px;color:#909399;margin:8px 0">已选：<b style="color:#256FED">'+(b.bin||'—')+'</b>　·　'+(isPreset?'已定位到所选货位，可点选其他空位调整':'默认末尾空位，可点选其他空位自由调整')+'</div>';
+      html+=b.bin?('<button class="btn btn-primary btn-full" onclick="confirmBind()">确认绑定（'+b.bin+'）</button>'):
+        '<button class="btn btn-ghost btn-full" onclick="addBin('+b.level+')">该层货位已满 · 新增货位</button>';
+    }else{
+      html+='<div class="alert a-amber">请先扫描层级标签以定位货架层级。</div>';
+    }
+  }
+
+  html+='</div><div style="height:20px"></div></div>';
+  return html;
+};
+function contNext(){BIND.step=1;BIND.tag='';BIND.tagState=null;BIND.bin='';render();toast('请扫描下一个商品的价签')}
+
+var LOGFILTER='全部';
+var LOGTYPES=['全部','新绑','换绑','去绑','结构调整'];
+function setLogFilter(t){LOGFILTER=t;render()}
+PAGES.logs=function(){
+  var color={新绑:'#256FED',换绑:'#E6A23C',去绑:'#F56C6C',结构调整:'#909399',位置更新:'#7B5EA7'};
+  var list=LOGFILTER==='全部'?LOGS:LOGS.filter(function(l){return l.type===LOGFILTER});
+  return '<div class="page on"><div class="nav"><div class="nav-row">'+
+    '<div class="nav-back" onclick="go(\'locHome\')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#303133" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></div>'+
+    '<div class="nav-title">绑定记录</div><div style="width:34px"></div></div>'+
+    '<div class="nav-sub">本次会话 + 近 7 天　·　操作留痕，不支持撤销</div></div>'+
+  '<div class="chips">'+LOGTYPES.map(function(t){
+    return '<div class="chip '+(LOGFILTER===t?'on':'')+'" onclick="setLogFilter(\''+t+'\')">'+t+'</div>'}).join('')+'</div>'+
+  (list.length===0?'<div style="text-align:center;color:#909399;font-size:13px;padding:40px 0">'+(LOGFILTER==='全部'?'暂无绑定记录':'暂无「'+LOGFILTER+'」记录')+'</div>':
+   list.map(function(l){
+    return '<div class="log"><span class="log-t" style="background:'+(color[l.type]||'#909399')+'">'+l.type+'</span>'+
+      '<div class="log-m"><b>'+esc(l.sku)+'</b>'+
+      '<div class="d">价签 '+l.tag+'　货位 '+l.bin+'<br>'+l.t+' · '+l.op+' · '+l.sync+'</div></div>'+
+      '</div>';
+  }).join(''))+
+  '<div class="sec"><div class="note"><b>留痕：</b>每次新绑/换绑/去绑均写入 <b>bind_audit_log</b>，含操作前后快照、操作人、角色、设备号；后台「价签管理-绑定日志」可导出。</div></div>'+
+  '<div style="height:20px"></div></div>';
+};
+
+
+
+selectWh('C01');
+selectShelf('C01-K01-H01');
+render();
+</script>
+</body>
+</html>
