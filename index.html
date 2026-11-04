@@ -136,6 +136,11 @@ html,body{background:#DDE1E8;font-family:-apple-system,BlinkMacSystemFont,"PingF
 .bin.used .b-no{color:var(--blue-d)}
 .bin.zero{background:#F7FAFF;border:1px dashed #9DBCF5}
 .bin.zero .b-no{color:var(--blue-d)}
+.open-item{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:10px;margin:8px 14px 0;padding:12px}
+.open-item .oi-m{flex:1;min-width:0}
+.open-item .oi-m .d{font-size:10.5px;color:var(--muted);margin-top:2px}
+.open-item .oi-s{flex:none;font-weight:700;font-size:14px;color:var(--text)}
+.open-item .oi-s.zero{color:#256FED}
 .bin.error{background:var(--red-bg);border-color:#FBC7C7}
 .bin.pick{border:1.5px solid var(--blue);box-shadow:0 0 0 2px rgba(37,111,237,.14)}
 .bin.sel{background:var(--blue);border-color:var(--blue)}
@@ -291,9 +296,15 @@ function toggleOffline(){OFFLINE=!OFFLINE;render();toast(OFFLINE?'已进入离�
 
 /* ============ 库位数据（仓库-库区-货架-层级-货位） ============ */
 var WH_LIST=[
-  {code:'C01',name:'01号仓库',areas:[{code:'C01-K01',name:'01号库区'},{code:'C01-K02',name:'02号库区'}]},
-  {code:'C02',name:'02号仓库',areas:[{code:'C02-K01',name:'01号库区'}]}
+  {code:'C01',name:'01号仓库',areas:[{code:'C01-K01',name:'01号库区',kind:'shelf'},{code:'C01-K02',name:'02号库区',kind:'shelf'}]},
+  {code:'C02',name:'02号仓库',areas:[{code:'C02-K01',name:'01号库区',kind:'open',openItems:[
+    {sku:'一次性手套（大号）',no:'AIWB-0077g',tag:'ESL-20230301',stock:36},
+    {sku:'离心管 50mL',no:'AIWB-0088c',tag:'ESL-20230302',stock:120},
+    {sku:'移液枪头盒（盒装）',no:'AIWB-0099t',tag:'ESL-20230303',stock:0}
+  ]}]}
 ];
+function findArea(code){var r=null;WH_LIST.forEach(function(w){w.areas.forEach(function(a){if(a.code===code)r=a})});return r}
+function areaKind(code){var a=findArea(code);return (a&&a.kind)||'shelf'}
 function genLayers(lvN,binN){
   var arr=[];
   for(var i=0;i<lvN;i++){
@@ -329,7 +340,6 @@ SHELVES.push({code:'C01-K01-H01',name:'0101号货架',areaCode:'C01-K01',layers:
 SHELVES.push(newShelf('C01-K01',2,3,3));
 SHELVES.push(newShelf('C01-K01',3,2,4));
 SHELVES.push(newShelf('C01-K02',1,3,3));
-SHELVES.push(newShelf('C02-K01',1,3,3));
 
 /* 当前上下文 */
 var LOC={wh:'01号仓库',whCode:'C01',area:'01号库区',areaCode:'C01-K01',shelfCode:'',shelfName:'',layers:[]};
@@ -407,6 +417,23 @@ var STATE_META={
 function renderShelf(opt){
   opt=opt||{};
   if(!LOC.shelfCode||!LOC.layers.length){
+    /* 散货库区：无货架，展示库区散货绑定列表 */
+    if(areaKind(LOC.areaCode)==='open'){
+      var a=findArea(LOC.areaCode),items=a.openItems||[];
+      var pcs=0,zn=0;items.forEach(function(o){pcs+=o.stock;if(o.stock===0)zn++});
+      var oh='<div class="shelf"><div class="shelf-top"><div><div class="code">'+LOC.area+' · 散货存放区</div>'+
+        '<div class="path">'+LOC.wh+' / '+LOC.area+' · 开放存放，不设货架与货位</div></div>'+
+        '<div class="tag">'+items.length+' 绑定 · '+pcs+' 件'+(zn?' · 零库存 '+zn:'')+'</div></div>';
+      oh+=items.length===0
+        ? '<div style="padding:34px 16px;text-align:center;color:#909399;font-size:13px">该库区暂无散货绑定<br>通过「价签绑定」扫商品 → 扫价签 → 扫库区标识码完成</div>'
+        : items.map(function(o,i){
+          return '<div class="open-item" onclick="openItemDetail(\''+a.code+'\','+i+')">'+
+            '<div class="oi-m"><b>'+esc(o.sku)+'</b><div class="d">'+o.no+'　🏷 '+o.tag+'</div></div>'+
+            '<span class="oi-s'+(o.stock===0?' zero':'')+'">'+o.stock+'件</span></div>';
+        }).join('');
+      oh+='<div style="font-size:10.5px;color:#909399;padding:10px 14px 2px;line-height:1.6">散货绑定只记录「商品在哪个库区」，不定位到具体货位；件数为 0 的绑定仍保留（价签仍绑着商品），去绑后才释放。</div></div>';
+      return oh;
+    }
     return '<div class="shelf"><div style="padding:34px 16px;text-align:center">'+
       '<div style="font-size:15px;font-weight:600">'+LOC.area+' 暂无货架</div>'+
       '<div style="font-size:12px;color:#909399;margin-top:6px;line-height:1.7">货架由管理端后台维护，PDA 端不提供货架新增<br>请联系仓库管理员在后台创建后再回来维护层级与货位</div></div></div>';
@@ -452,6 +479,20 @@ function onBinTap(li,bi){
   SELBIN={li:li,bi:bi};render();openBinDetail(li,bi);
 }
 
+/* 散货绑定详情 */
+function openItemDetail(areaCode,i){
+  var a=findArea(areaCode),o=a.openItems[i];
+  var body='<div class="sh-t">散货绑定详情</div>'+
+    '<div style="font-size:13px;line-height:1.9">'+
+    '<div>绑定目标：<b>'+LOC.wh+' / '+a.name+'</b>（散货存放区）</div>'+
+    '<div>商品：<b>'+esc(o.sku)+'</b>（'+o.no+'）</div>'+
+    '<div>库存数量：'+o.stock+' 件</div>'+
+    '<div>绑定价签：'+o.tag+'</div></div>'+
+    (o.stock===0?'<div class="alert a-blue" style="margin:10px 0 0">零库存：价签仍绑定该商品，补货入库后件数自动更新；如需释放请先去绑价签。</div>':'');
+  var acts='<div class="btn-row"><button class="btn btn-danger" onclick="closeAll();gotoUnbind(\''+o.tag+'\')">去绑价签</button></div>';
+  openSheet(body+acts);
+}
+
 /* ============ 库位结构操作 ============ */
 function needAdmin(){if(ROLE!=='仓管（组长）'){toast('当前角色无此操作权限，请联系仓库管理员');return true}return false}
 
@@ -470,7 +511,8 @@ function pickerRows(){
     var w=null;WH_LIST.forEach(function(x){if(x.code===LOC.whCode)w=x});
     (w?w.areas:[]).forEach(function(a){
       if(!hit(a.name,a.code))return;
-      rows.push({code:a.code,name:a.name,sub:a.code,meta:shelvesIn(a.code).length+' 个货架',cur:a.code===LOC.areaCode,fn:'pickArea'});
+      var meta=(a.kind==='open')?'散货存放区':(shelvesIn(a.code).length+' 个货架');
+      rows.push({code:a.code,name:a.name,sub:a.code,meta:meta,cur:a.code===LOC.areaCode,fn:'pickArea'});
     });
   }else{
     shelvesIn(LOC.areaCode).forEach(function(s){
@@ -564,7 +606,16 @@ var SKUS=[
   {name:'碳吸附胎牛血清',brand:'Perfemiker',no:'AIWB-0028t',spec:'5mg/瓶',unit:'瓶'}
 ];
 var BIND={step:0,queue:[],tag:'',tagState:null,oldSku:null,level:-1,bin:'',reason:'',note:''};
-function resetBind(){BIND={step:0,queue:[],tag:'',tagState:null,oldSku:null,level:-1,bin:'',reason:'',note:'',fromBin:null}}
+function resetBind(){BIND={step:0,queue:[],tag:'',tagState:null,oldSku:null,level:-1,bin:'',reason:'',note:'',fromBin:null,target:'bin',areaCode:''}}
+/* 扫散货区库区码：直接绑定到库区（不做存放点） */
+function scanArea(code){
+  if(BIND.queue.length===0){toast('请先扫描商品二维码');return;}
+  if(BIND.step<2||!BIND.tag){toast('请先扫描价签');return;}
+  var a=findArea(code);
+  if(!a||a.kind!=='open'){toast('该库区不是散货存放区');return;}
+  BIND.target='area';BIND.areaCode=a.code;BIND.areaName=a.name;BIND.step=4;render();
+  toast('已扫库区码 '+a.code+'：散货存放区，商品将绑定到库区');
+}
 function startBind(){resetBind();go('bind')}
 /* 从货位详情进入：预置目标货位，扫层标后仍落在所选货位 */
 function startBindFrom(li,bi){
@@ -619,11 +670,18 @@ function setTagFree(tag){
   LOC.layers.forEach(function(l){l.bins.forEach(function(b){
     if(b.tag===tag){b.tag='';b.sku='';b.no='';b.stock=0;b.state='empty';}
   })});
+  /* 库区散货绑定同步释放 */
+  WH_LIST.forEach(function(w){w.areas.forEach(function(a){
+    if(a.openItems){for(var i=a.openItems.length-1;i>=0;i--){if(a.openItems[i].tag===tag)a.openItems.splice(i,1)}}
+  })});
 }
 function gotoUnbind(tag){
-  BIND={step:2,queue:[],tag:tag,tagState:'same',oldSku:'',level:-1,bin:'',reason:'',note:''};
+  BIND={step:2,queue:[],tag:tag,tagState:'same',oldSku:'',level:-1,bin:'',reason:'',note:'',target:'bin',areaCode:''};
   var found='';
   LOC.layers.forEach(function(l){l.bins.forEach(function(b){if(b.tag===tag){found=b.sku}})});
+  if(!found){WH_LIST.forEach(function(w){w.areas.forEach(function(a){
+    if(a.openItems)a.openItems.forEach(function(o){if(o.tag===tag)found=o.sku})
+  })});}
   BIND.oldSku=found||'（未绑商品）';
   go('bind');setTimeout(openUnbind,150);
 }
@@ -657,6 +715,35 @@ function pickBin(li,bi){
   else toast('该货位已占用：'+b.sku);
 }
 function confirmBind(){
+  /* 库区散货绑定：无货位，直接落库区 */
+  if(BIND.target==='area'){
+    var sku0=BIND.queue[0];
+    var a=findArea(BIND.areaCode);
+    if(!a){toast('库区不存在');return;}
+    var old=null;
+    (a.openItems||[]).forEach(function(o){if(o.tag===BIND.tag)old=o});
+    var type0=BIND.tagState==='other'?'换绑':(old&&old.sku===sku0.name?'位置更新':'新绑');
+    openConfirm('确认绑定（库区散货）',
+      '<div style="font-size:13px;line-height:1.9">商品：<b>'+esc(sku0.name)+'</b><br>价签：<b>'+BIND.tag+'</b><br>绑定目标：<b>'+LOC.wh+' / '+BIND.areaName+'</b>（散货存放）<br>操作类型：<b>'+type0+'</b>'+
+      (old?'<br><span style="color:#E6A23C;font-size:12px">该价签原绑定：'+esc(old.sku)+'（'+old.stock+'件），将被替换。</span>':'')+
+      '<br><span style="color:#909399;font-size:12px">散货绑定仅记录「商品在哪个库区」，不定位到具体货位；确认后推送墨水屏并写入审计日志。</span></div>',
+      '确认绑定',function(){
+        LOC.layers.forEach(function(l){l.bins.forEach(function(b){
+          if(b.tag===BIND.tag){b.tag='';b.sku='';b.no='';b.stock=0;b.state='empty';}
+        })});
+        if(!a.openItems)a.openItems=[];
+        var idx=-1;a.openItems.forEach(function(o,i){if(o.tag===BIND.tag)idx=i});
+        var item={sku:sku0.name,no:sku0.no,tag:BIND.tag,stock:sku0.qty};
+        if(idx>=0&&a.openItems[idx].sku===sku0.name){a.openItems[idx].stock+=sku0.qty;}
+        else if(idx>=0){a.openItems[idx]=item;}
+        else{a.openItems.push(item);}
+        pushLog(type0,sku0.name,BIND.tag,BIND.areaCode);
+        BIND.queue.shift();
+        closeAll();BIND.step=5;render();
+        toast('绑定成功：'+sku0.name+' × '+BIND.tag+' × '+BIND.areaName+'（散货）');
+      });
+    return;
+  }
   if(!BIND.bin){toast('请选择货位');return;}
   var sku=BIND.queue[0];
   var li=BIND.level,bn=parseInt(BIND.bin.split('-').pop(),10),target=null;
@@ -768,7 +855,7 @@ PAGES.loc=function(){
   '</div>'+
   '<div class="navpg">'+
     '<div class="np" onclick="stepShelf(-1)">‹</div>'+
-    '<div class="np-t">'+(list.length?((idx+1)+'/'+list.length+' · '+LOC.shelfCode):'当前库区暂无货架')+'</div>'+
+    '<div class="np-t">'+(list.length?((idx+1)+'/'+list.length+' · '+LOC.shelfCode):(areaKind(LOC.areaCode)==='open'?'散货存放区 · 无货架':'当前库区暂无货架'))+'</div>'+
     '<div class="np" onclick="stepShelf(1)">›</div>'+
   '</div>'+
   renderShelf()+
@@ -873,18 +960,31 @@ PAGES.bind=function(){
     }
   }
 
-  /* Step3 扫层标 */
+  /* Step3 扫层标 / 库区码 */
   if(b.step===3){
-    html+='<div class="rc ok"><div class="ri">✓</div><div>价签 <b>'+b.tag+'</b> 已识别，判定：<b>'+(b.tagState==='other'?'换绑':(b.tagState==='same'?'位置更新':'新绑'))+'</b><br>请扫描货架层级标签（贴在层板侧面）。</div></div>'+
-      '<div class="sec-t" style="margin:14px 0 8px">3 扫货架层级标签</div>'+
+    var openA=[];
+    WH_LIST.forEach(function(w){if(w.code===LOC.whCode)w.areas.forEach(function(a){if(a.kind==='open')openA.push(a)})});
+    html+='<div class="rc ok"><div class="ri">✓</div><div>价签 <b>'+b.tag+'</b> 已识别，判定：<b>'+(b.tagState==='other'?'换绑':(b.tagState==='same'?'位置更新':'新绑'))+'</b><br>请扫描货架层级标签；散货商品可直接扫库区标识码。</div></div>'+
+      '<div class="sec-t" style="margin:14px 0 8px">3 扫层级标签 / 库区标识码</div>'+
       '<div class="inp-row"><input placeholder="扫描层标" value="'+(b.level>=0?layerCode(b.level):'')+'"><div class="scan-btn" onclick="toast(\'调起 PDA 扫描头…\')"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#256FED" stroke-width="2"><path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2M7 12h10M7 16h6M7 8h10"/></svg></div></div>'+
       '<div class="sim"><div class="st">💡 演示 · 模拟扫层标</div><div class="sim-c">'+
         LOC.layers.map(function(l,i){return '<div class="sc" onclick="scanLevel('+i+')">'+l.name+'</div>'}).join('')+
+        (openA.length?('<div class="sc" style="border-color:#E6A23C;color:#E6A23C" onclick="scanArea(\''+openA[0].code+'\')">📦 '+openA[0].name+'（散货库区码）</div>'):'')+
       '</div></div>';
   }
 
-  /* Step4 选货位 */
+  /* Step4 选货位 / 确认库区 */
   if(b.step===4){
+    if(b.target==='area'){
+      var a2=findArea(b.areaCode);
+      var n2=(a2&&a2.openItems)?a2.openItems.length:0;
+      html+='<div class="sec-t" style="margin:14px 0 8px">4 确认绑定目标</div>'+
+        '<div class="rc ok"><div class="ri">✓</div><div>已扫描库区标识码，商品将绑定到：<br><b style="font-size:15px">'+LOC.wh+' / '+b.areaName+'</b>（散货存放区）<br><span style="color:#909399;font-size:12px">该库区当前已有 '+n2+' 个散货绑定；散货绑定不定位到具体货位。</span></div></div>'+
+        '<button class="btn btn-primary btn-full" style="margin-top:14px" onclick="confirmBind()">确认绑定（'+b.areaName+' · 散货）</button>'+
+        '<button class="btn btn-ghost btn-full" style="margin-top:10px" onclick="BIND.target=\'bin\';BIND.areaCode=\'\';BIND.step=3;render()">改扫层级标签（绑到货位）</button>';
+      html+='</div><div style="height:20px"></div></div>';
+      return html;
+    }
     html+='<div class="sec-t" style="margin:14px 0 8px">4 确认价签位置'+(b.level>=0?'（'+LOC.layers[b.level].name+'）':'')+'</div>';
     if(b.level>=0){
       html+=renderShelf({pick:true,level:b.level});
