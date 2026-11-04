@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>仓库管理后台 · 库位配置建设 Demo</title>
+<style>
+:root{--blue:#256FED;--amber:#E6A23C;--red:#F56C6C;--line:#e6eaf2;--muted:#909399;--text:#1f2430}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:#f4f6fa;color:var(--text);font-size:13px}
+.topbar{height:52px;background:#1f2430;color:#fff;display:flex;align-items:center;padding:0 20px;gap:14px}
+.topbar .logo{font-size:14px;font-weight:700}
+.topbar .logo small{font-weight:400;color:#8b94a8;margin-left:8px;font-size:11.5px}
+.topbar .sp{flex:1}
+.topbar .who{font-size:12px;color:#c9d1e0}
+.layout{display:flex;height:calc(100vh - 52px)}
+.side{width:198px;flex:none;background:#fff;border-right:1px solid var(--line);padding:14px 10px}
+.side .grp{font-size:10.5px;color:var(--muted);padding:6px 12px;letter-spacing:1px}
+.side .nav div{padding:9px 12px;border-radius:7px;font-size:12.5px;cursor:pointer;color:#4a4f5a}
+.side .nav div:hover{background:#f4f6fa}
+.side .nav div.on{background:#EAF1FF;color:var(--blue);font-weight:600}
+.main{flex:1;min-width:0;overflow:auto;padding:20px 24px 50px;position:relative}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.bar{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid #eef1f7;flex-wrap:wrap}
+.bar b{font-size:13px}
+.bar .sp{flex:1}
+.btn{border:1px solid #d7dde9;background:#fff;color:#3b4356;border-radius:7px;padding:7px 13px;font-size:12px;cursor:pointer;font-family:inherit}
+.btn.p{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}
+.btn.d{color:var(--red);border-color:#f3c4c4}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{background:#fafbfe;color:#7a8398;font-weight:500;text-align:left;padding:10px 14px;border-bottom:1px solid #eef1f7;white-space:nowrap}
+td{padding:11px 14px;border-bottom:1px solid #f4f6fa;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+.mono{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;color:#5b6478}
+.ops{display:flex;gap:12px;white-space:nowrap}
+.lk{color:var(--blue);cursor:pointer;font-size:12px}
+.lk.d{color:var(--red)}
+.mchip{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.mchip.shelf{background:#eef1f7;color:#5b6478}
+.mchip.open{background:#FFF3E3;color:#B88230}
+.mchip.mix{background:#EAF1FF;color:var(--blue)}
+.mchip.used{background:#EAF1FF;color:var(--blue)}
+.mchip.zero{background:#EAF7F4;color:#1F9E8B}
+.mchip.free{background:#eef1f7;color:#5b6478}
+.mchip.fault{background:#FDECEC;color:var(--red)}
+.muted{color:var(--muted);font-size:11.5px}
+.alert{background:#FFF7E6;border:1px solid #f5dfb8;color:#9a6b1f;border-radius:8px;padding:9px 12px;font-size:11.5px;line-height:1.7;margin-bottom:14px}
+.alert.blue{background:#F0F6FF;border-color:#cfe0fb;color:#256FED}
+.drawer{position:fixed;top:52px;right:0;bottom:0;width:480px;max-width:94%;background:#fff;box-shadow:-8px 0 24px rgba(20,30,60,.14);display:none;flex-direction:column;z-index:60}
+.drawer.on{display:flex}
+.drawer h3{font-size:14px;padding:16px 18px;border-bottom:1px solid #eef1f7;margin:0}
+.dr-body{flex:1;overflow:auto;padding:16px 18px}
+.dr-foot{padding:13px 18px;border-top:1px solid #eef1f7;display:flex;gap:10px;justify-content:flex-end}
+.fld{margin-bottom:15px}
+.fld label{display:block;font-size:12px;color:#5b6478;margin-bottom:6px}
+.fld input,.fld select{width:100%;border:1px solid #dfe4ee;border-radius:7px;padding:8px 10px;font-size:12.5px;font-family:inherit;color:var(--text);background:#fff}
+.fld input[readonly]{background:#f7f8fb;color:#7a8398}
+.fld .hint{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.5}
+.mc{display:flex;flex-direction:column;gap:8px}
+.mcard{border:1.5px solid var(--line);border-radius:10px;padding:11px 13px;cursor:pointer}
+.mcard.on{border-color:var(--blue);background:#F5F8FF}
+.mcard b{font-size:13px}
+.mcard .d{font-size:11px;color:#8b94a8;margin-top:3px;line-height:1.5}
+.sec{font-size:12px;font-weight:600;margin:16px 0 8px;padding-top:12px;border-top:1px dashed var(--line)}
+.mask{position:fixed;inset:0;background:rgba(20,26,40,.4);display:none;z-index:70}
+.mask.on{display:block}
+.modal{position:fixed;top:52px;left:0;right:0;bottom:0;display:none;align-items:flex-start;justify-content:center;padding-top:12vh;z-index:80}
+.modal.on{display:flex}
+.modal .mm{background:#fff;border-radius:12px;width:440px;max-width:92%;padding:18px 20px;box-shadow:0 12px 40px rgba(20,30,60,.18)}
+.modal h4{font-size:14px;margin:0 0 10px}
+.modal .mb{font-size:12.5px;line-height:1.9;color:#3b4356}
+.modal .mf{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+#toast{position:fixed;left:50%;bottom:60px;transform:translateX(-50%);background:rgba(0,0,0,.82);color:#fff;font-size:13px;padding:10px 16px;border-radius:8px;z-index:200;opacity:0;transition:opacity .2s;max-width:80%;text-align:center;line-height:1.6}
+#toast.on{opacity:1}
+.path{font-size:12px;color:#5b6478;margin-bottom:14px}
+.path b{color:var(--text)}
+.kpi{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.kpi .k{flex:1;min-width:150px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:13px 16px}
+.kpi .k .n{font-size:20px;font-weight:700;margin-top:4px}
+.kpi .k .l{font-size:11.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="logo">科管数据中台<small>仓库管理后台 · 库位配置建设</small></div>
+  <div class="sp"></div>
+  <div class="who">角色：仓库管理员　|　V1.0.50 Demo</div>
+</div>
+<div class="layout">
+  <div class="side">
+    <div class="grp">基础配置</div>
+    <div class="nav" id="nav"></div>
+    <div class="grp" style="margin-top:14px">配置建设路径</div>
+    <div style="font-size:11px;color:var(--muted);line-height:1.9;padding:0 12px">
+      ① 建仓库<br>② 建库区 · 选存放模式<br>③ 货架区：建货架→层级→货位<br>④ 散货区：打印库区标识码<br>⑤ 统一制签张贴
+    </div>
+  </div>
+  <div class="main" id="mainBody"></div>
+</div>
+<div class="drawer" id="drawer"></div>
+<div class="mask" id="mask" onclick="closeDrawer();closeModal()"></div>
+<div class="modal" id="modal" onclick="closeModal()"><div class="mm" id="modalBox" onclick="event.stopPropagation()"></div></div>
+<div id="toast"></div>
+<script>
+/* ============ 基础 ============ */
+function $(s){return document.querySelector(s)}
+function toast(m){var t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast._t);toast._t=setTimeout(function(){t.classList.remove('on')},2300)}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function pad(n){return n<10?('0'+n):(''+n)}
+
+/* ============ 数据（与 PDA 库位管理 Demo 同构） ============ */
+var WH_LIST=[
+  {code:'C01',name:'01号仓库',areas:[{code:'C01-K01',name:'01号库区',kind:'shelf'},{code:'C01-K02',name:'02号库区',kind:'mix',openItems:[
+    {sku:'标准快递纸箱（大）',no:'AIWB-0120b',tag:'ESL-20230401',stock:18}
+  ]}]},
+  {code:'C02',name:'02号仓库',areas:[{code:'C02-K01',name:'01号库区',kind:'open',openItems:[
+    {sku:'一次性手套（大号）',no:'AIWB-0077g',tag:'ESL-20230301',stock:36},
+    {sku:'离心管 50mL',no:'AIWB-0088c',tag:'ESL-20230302',stock:120},
+    {sku:'移液枪头盒（盒装）',no:'AIWB-0099t',tag:'ESL-20230303',stock:0}
+  ]}]}
+];
+function findArea(code){var r=null;WH_LIST.forEach(function(w){w.areas.forEach(function(a){if(a.code===code)r=a})});return r}
+function findWh(code){var r=null;WH_LIST.forEach(function(w){if(w.code===code)r=w});return r}
+function areaKind(code){var a=findArea(code);return (a&&a.kind)||'shelf'}
+function genLayers(lvN,binN){
+  var arr=[];
+  for(var i=0;i<lvN;i++){
+    var bins=[];
+    for(var j=0;j<binN;j++)bins.push({seq:j+1,state:'empty',sku:'',no:'',tag:'',stock:0});
+    arr.push({name:pad(i+1)+'号层级',code:'',bins:bins});
+  }
+  return arr;
+}
+function areaSeqN(code){return parseInt((code.split('-')[1]||'01').replace('K',''),10)||1}
+function shelfName(areaCode,seq){return areaSeqN(code2area(areaCode))+pad(seq)+'号货架'}
+function code2area(shelfCode){return shelfCode.split('-').slice(0,2).join('-')}
+function newShelf(areaCode,seq,lvN,binN){
+  return {code:areaCode+'-H'+pad(seq),name:areaSeqN(areaCode)+pad(seq)+'号货架',areaCode:areaCode,layers:genLayers(lvN||3,binN||3)};
+}
+var SHELVES=[];
+SHELVES.push({code:'C01-K01-H01',name:'0101号货架',areaCode:'C01-K01',layers:[
+  {name:'01号层级',code:'',bins:[
+    {seq:1,state:'used',sku:'DMEM 高糖培养基',no:'AIWB-0011x',tag:'ESL-20230088',stock:12},
+    {seq:2,state:'used',sku:'PBS缓冲液 pH7.4',no:'AIWB-0031s',tag:'ESL-20230091',stock:6},
+    {seq:3,state:'used',sku:'胰蛋白酶-EDTA',no:'AIWB-0042e',tag:'ESL-20230115',stock:4}
+  ]},
+  {name:'02号层级',code:'',bins:[
+    {seq:1,state:'used',sku:'胎牛血清',no:'AIWB-0028t',tag:'ESL-20230102',stock:3},
+    {seq:2,state:'zero',sku:'青链霉素混合液 100X',no:'AIWB-0055p',tag:'ESL-20230121',stock:0},
+    {seq:3,state:'empty',sku:'',no:'',tag:'',stock:0}
+  ]},
+  {name:'03号层级',code:'',bins:[
+    {seq:1,state:'empty',sku:'',no:'',tag:'',stock:0},
+    {seq:2,state:'empty',sku:'',no:'',tag:'',stock:0},
+    {seq:3,state:'empty',sku:'',no:'',tag:'',stock:0}
+  ]}
+]});
+SHELVES.push(newShelf('C01-K01',2,3,3));
+SHELVES.push(newShelf('C01-K01',3,2,4));
+SHELVES.push(newShelf('C01-K02',1,3,3));
+function shelvesIn(areaCode){return SHELVES.filter(function(s){return s.areaCode===areaCode})}
+function shelfStat(s){
+  var n=0,used=0,empty=0;
+  s.layers.forEach(function(l){l.bins.forEach(function(b){n++;if(b.state==='used')used++;if(b.state==='empty')empty++})});
+  return {total:n,used:used,empty:empty,lv:s.layers.length};
+}
+var FREE_TAGS=[{tag:'ESL-20240001'},{tag:'ESL-20240002'},{tag:'ESL-20240003'}];
+var FAULT_TAGS=[{tag:'ESL-20240999',why:'通讯异常'}];
+
+/* ============ 框架 ============ */
+var CUR='wh',AREA_FILTER='',ADM_AREA='',DRAWER=null,ESL_FILTER='全部';
+var KIND_META={shelf:{t:'货架区',c:'shelf'},open:{t:'散货区',c:'open'},mix:{t:'混合区',c:'mix'}};
+var NAV=[['wh','仓库管理'],['area','库区管理'],['shelf','货架与货位'],['esl','价签管理'],['tag','标签打印']];
+function areaKindLabel(k){return (KIND_META[k]||KIND_META.shelf).t}
+function setCur(p){CUR=p;DRAWER=null;render()}
+function closeModal(){var m=$('#modal');if(m)m.classList.remove('on')}
+function closeDrawer(){var d=$('#drawer');if(d)d.classList.remove('on');$('#mask').classList.remove('on')}
+function openModal(html){$('#modalBox').innerHTML=html;$('#modal').classList.add('on');$('#mask').classList.add('on')}
+var _ok=null;
+function confirmDlg(title,body,fn){
+  _ok=fn||null;
+  openModal('<h4>'+title+'</h4><div class="mb">'+body+'</div><div class="mf"><button class="btn" onclick="closeModal()">取消</button><button class="btn p" onclick="okRun()">确认</button></div>');
+}
+function blockDlg(title,body,btn,fn){
+  _ok=fn||null;
+  openModal('<h4>'+title+'</h4><div class="mb">'+body+'</div><div class="mf"><button class="btn p" onclick="okRun()">'+(btn||'知道了')+'</button></div>');
+}
+function okRun(){var f=_ok;_ok=null;closeModal();if(f)f()}
+function openDrawer(html){$('#drawer').innerHTML=html;$('#drawer').classList.add('on');$('#mask').classList.add('on')}
+function render(){
+  $('#nav').innerHTML=NAV.map(function(n){return '<div class="'+(CUR===n[0]?'on':'')+'" onclick="setCur(\''+n[0]+'\')">'+n[1]+'</div>'}).join('');
+  $('#mainBody').innerHTML=(PAGES[CUR]||PAGES.wh)();
+  var m=$('.main');if(m)m.scrollTop=0;
+}
+
+/* ============ 统计 ============ */
+function areaBinStat(code){
+  var n=0,bound=0;
+  shelvesIn(code).forEach(function(s){s.layers.forEach(function(l){l.bins.forEach(function(b){n++;if(b.tag)bound++})})});
+  return {total:n,bound:bound};
+}
+function whStat(w){
+  var sh=0,bins=0,bound=0,open=0;
+  w.areas.forEach(function(a){
+    shelvesIn(a.code).forEach(function(s){sh++;s.layers.forEach(function(l){l.bins.forEach(function(b){bins++;if(b.tag)bound++})})});
+    open+=(a.openItems||[]).length;
+  });
+  return {shelf:sh,bins:bins,bound:bound,open:open};
+}
+
+var PAGES={};
+
+/* ============ 页面：仓库管理 ============ */
+PAGES.wh=function(){
+  var rows=WH_LIST.map(function(w){
+    var st=whStat(w);
+    return '<tr><td class="mono">'+w.code+'</td><td><b>'+esc(w.name)+'</b></td>'+
+      '<td>'+w.areas.length+'</td><td>'+st.shelf+'</td><td>'+st.bins+'</td>'+
+      '<td>'+(st.bound+st.open)+'</td>'+
+      '<td><div class="ops"><span class="lk" onclick="goAreaOf(\''+w.code+'\')">查看库区</span>'+
+      '<span class="lk d" onclick="delWh(\''+w.code+'\')">删除</span></div></td></tr>';
+  }).join('');
+  return '<div class="path"><b>基础配置</b> / 仓库管理</div>'+
+    '<div class="alert blue">配置建设第一步：仓库是最高层级，库区挂在仓库下。库区选择<b>存放模式</b>后决定是否需要建货架/层级/货位（见库区管理）。</div>'+
+    '<div class="card"><div class="bar"><b>仓库列表</b><span class="muted">共 '+WH_LIST.length+' 个</span><div class="sp"></div>'+
+    '<button class="btn p" onclick="newWh()">+ 新建仓库</button></div>'+
+    '<table><thead><tr><th>仓库编码</th><th>仓库名称</th><th>库区</th><th>货架</th><th>货位</th><th>绑定总数</th><th>操作</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+};
+function newWh(){
+  DRAWER={type:'whNew',name:(WH_LIST.length+1)+'号仓库'};
+  openDrawer('<h3>新建仓库</h3><div class="dr-body">'+
+    '<div class="fld"><label>仓库编码</label><input readonly value="C'+pad(WH_LIST.length+1)+'"><div class="hint">系统自动生成，创建后不可修改</div></div>'+
+    '<div class="fld"><label>仓库名称</label><input id="fName" value="'+esc(DRAWER.name)+'" oninput="DRAWER.name=this.value"></div>'+
+    '<div class="hint" style="font-size:11px;color:#909399;line-height:1.8">创建仓库后请继续：建库区 → 选存放模式 → 按模式配置货架或打印库区标识码。</div>'+
+    '</div><div class="dr-foot"><button class="btn" onclick="closeDrawer()">取消</button><button class="btn p" onclick="saveWh()">创建仓库</button></div>');
+}
+function saveWh(){
+  var name=(DRAWER.name||'').trim();
+  if(!name){toast('请填写仓库名称');return}
+  var code='C'+pad(WH_LIST.length+1);
+  WH_LIST.push({code:code,name:name,areas:[]});
+  closeDrawer();render();toast('已创建仓库 '+name+'（'+code+'），下一步：建库区');
+}
+function goAreaOf(wh){AREA_FILTER=wh;CUR='area';DRAWER=null;render()}
+function delWh(code){
+  var w=findWh(code);
+  if(w.areas.length){blockDlg('无法删除仓库','该仓库下存在 <b>'+w.areas.length+'</b> 个库区，请先删除全部库区。','知道了',null);return}
+  confirmDlg('删除仓库','确认删除 <b>'+esc(w.name)+'</b>（'+code+'）？',function(){
+    WH_LIST.splice(WH_LIST.indexOf(w),1);render();toast('已删除仓库 '+code);
+  });
+}
+
+/* ============ 页面：库区管理 ============ */
+PAGES.area=function(){
+  var list=[];
+  WH_LIST.forEach(function(w){w.areas.forEach(function(a){if(!AREA_FILTER||w.code===AREA_FILTER)list.push({w:w,a:a})})});
+  var rows=list.map(function(x){
+    var a=x.a,k=a.kind||'shelf',sh=shelvesIn(a.code).length,st=areaBinStat(a.code),op=(a.openItems||[]).length;
+    return '<tr><td class="mono">'+a.code+'</td><td><b>'+esc(a.name)+'</b></td><td>'+esc(x.w.name)+'</td>'+
+      '<td><span class="mchip '+KIND_META[k].c+'">'+areaKindLabel(k)+'</span></td>'+
+      '<td>'+(sh?(sh+' 个货架 · '+st.total+' 货位'+(st.bound?' · 已绑 '+st.bound:'')):'<span class="muted">未配置货架</span>')+'</td>'+
+      '<td>'+(op?op+' 个':'<span class="muted">—</span>')+'</td>'+
+      '<td><div class="ops">'+
+      '<span class="lk" onclick="editArea(\''+a.code+'\')">编辑</span>'+
+      '<span class="lk" onclick="ADM_AREA=\''+a.code+'\';setCur(\'shelf\')">配置货架</span>'+
+      '<span class="lk" onclick="printAreaCode(\''+a.code+'\')">打印库区码</span>'+
+      '<span class="lk d" onclick="delArea(\''+a.code+'\')">删除</span>'+
+      '</div></td></tr>';
+  }).join('');
+  var whOpts='<option value="">全部仓库</option>'+WH_LIST.map(function(w){return '<option value="'+w.code+'"'+(AREA_FILTER===w.code?' selected':'')+'>'+esc(w.name)+'</option>'}).join('');
+  return '<div class="path"><b>基础配置</b> / 库区管理</div>'+
+    '<div class="alert blue">库区是结构配置的根：选<b>货架区</b>必须建货架/层级/货位；选<b>散货区</b>无需建货架，仅需打印库区标识码；选<b>混合区</b>两者并存。模式切换有前置校验（存在绑定/货架时阻断）。</div>'+
+    '<div class="card"><div class="bar"><b>库区列表</b><span class="muted">共 '+list.length+' 个</span>'+
+    '<select style="border:1px solid #dfe4ee;border-radius:7px;padding:6px 8px;font-size:12px" onchange="AREA_FILTER=this.value;render()">'+whOpts+'</select>'+
+    '<div class="sp"></div><button class="btn p" onclick="newArea()">+ 新建库区</button></div>'+
+    '<table><thead><tr><th>库区编码</th><th>库区名称</th><th>所属仓库</th><th>存放模式</th><th>结构</th><th>散货绑定</th><th>操作</th></tr></thead><tbody>'+
+    (rows||'<tr><td colspan="7" style="text-align:center;color:#909399;padding:30px">该仓库暂无库区，点击「+ 新建库区」创建</td></tr>')+
+    '</tbody></table></div>';
+};
+function nextAreaSeq(whCode){
+  var w=findWh(whCode),max=0;
+  (w?w.areas:[]).forEach(function(a){var n=areaSeqN(a.code);if(n>max)max=n});
+  return max+1;
+}
+function newArea(){
+  if(!WH_LIST.length){toast('请先创建仓库');return}
+  var wh=AREA_FILTER&&findWh(AREA_FILTER)?AREA_FILTER:WH_LIST[0].code;
+  DRAWER={type:'areaNew',wh:wh,name:nextAreaSeq(wh)+'号库区',kind:'shelf'};
+  drawerArea();
+}
+function editArea(code){
+  var a=findArea(code);if(!a)return;
+  DRAWER={type:'areaEdit',wh:code.split('-')[0],areaCode:code,name:a.name,kind:a.kind||'shelf'};
+  drawerArea();
+}
+function setMode(k){if(DRAWER){DRAWER.kind=k;drawerArea()}}
+function pickWh(v){if(DRAWER){DRAWER.wh=v;DRAWER.name=nextAreaSeq(v)+'号库区';drawerArea()}}
+function drawerArea(){
+  var d=DRAWER,isNew=d.type==='areaNew';
+  var code=isNew?(d.wh+'-K'+pad(nextAreaSeq(d.wh))):d.areaCode;
+  var whOpts=WH_LIST.map(function(w){return '<option value="'+w.code+'"'+(w.code===d.wh?' selected':'')+'>'+esc(w.name)+'</option>'}).join('');
+  var cards=[['shelf','货架区','必须配置货架/层级/货位，价签只能绑货位'],
+             ['open','散货区','无需货架，商品直接绑到库区（需打印库区标识码）'],
+             ['mix','混合区','货架与散货并存，绑定目标二选一']].map(function(m){
+    return '<div class="mcard'+(d.kind===m[0]?' on':'')+'" onclick="setMode(\''+m[0]+'\')">'+
+      '<b>'+m[1]+'</b>'+(d.kind===m[0]?' <span style="color:#256FED">✓</span>':'')+
+      '<div class="d">'+m[2]+'</div></div>';
+  }).join('');
+  var shelfHint=d.kind==='open'
+    ? '<div class="alert">散货区不建货架：保存后该库区无货架/层级/货位，PDA 端直接展示散货绑定列表。</div>'
+    : '<div class="alert blue">保存后在「货架与货位」中为新库区创建货架（层数 × 每层货位数），系统自动生成层级与货位编码。</div>';
+  openDrawer('<h3>'+(isNew?'新建库区':'编辑库区 · '+d.areaCode)+'</h3><div class="dr-body">'+
+    '<div class="fld"><label>所属仓库</label><select onchange="pickWh(this.value)"'+(isNew?'':' disabled')+'>'+whOpts+'</select></div>'+
+    '<div class="fld"><label>库区编码</label><input readonly value="'+esc(code)+'"><div class="hint">系统自动生成（仓库-库区），创建后不可修改</div></div>'+
+    '<div class="fld"><label>库区名称</label><input id="fName" value="'+esc(d.name)+'" oninput="DRAWER.name=this.value"></div>'+
+    '<div class="fld"><label>存放模式</label><div class="mc">'+cards+'</div></div>'+
+    '<div class="sec">库区标识码</div>'+
+    '<div class="fld"><input readonly value="'+esc(code)+'"><div class="hint">'+(d.kind==='open'?'散货区必配':(d.kind==='mix'?'混合区必配':'货架区可选（便于后续切换为混合区）'))+'：贴于库区入口，PDA 扫码即可绑定到本库区</div></div>'+
+    '<button class="btn" onclick="printAreaCode(\''+code+'\')">打印二维码</button>'+
+    '<div class="sec">货架与货位</div>'+shelfHint+
+    '</div><div class="dr-foot"><button class="btn" onclick="closeDrawer()">取消</button><button class="btn p" onclick="saveArea()">'+(isNew?'创建库区':'保存')+'</button></div>');
+}
+function saveArea(){
+  var d=DRAWER;if(!d)return;
+  var name=(d.name||'').trim();
+  if(!name){toast('请填写库区名称');return}
+  if(d.type==='areaNew'){
+    var w=findWh(d.wh);
+    var code=d.wh+'-K'+pad(nextAreaSeq(d.wh));
+    w.areas.push({code:code,name:name,kind:d.kind,openItems:[]});
+    closeDrawer();render();
+    toast('已创建库区 '+name+'（'+areaKindLabel(d.kind)+'）'+(d.kind==='open'?'：无需配置货架，可打印库区码':'：请到「货架与货位」建货架'));
+    return;
+  }
+  var a=findArea(d.areaCode);if(!a)return;
+  var old=a.kind||'shelf',sh=shelvesIn(a.code).length,st=areaBinStat(a.code),op=(a.openItems||[]).length;
+  if(old!==d.kind){
+    if((old==='shelf'||old==='mix')&&d.kind==='open'&&(sh||st.bound)){
+      blockDlg('无法切换为散货区','该库区存在 <b>'+sh+'</b> 个货架、<b>'+st.bound+'</b> 个在架绑定。<br>请先去绑价签并删除货架后再切换。','去货架与货位',function(){closeDrawer();ADM_AREA=a.code;setCur('shelf')});
+      return;
+    }
+    if(old==='open'&&d.kind!=='open'&&op){
+      blockDlg('无法切换为'+(d.kind==='mix'?'混合区':'货架区'),'该库区存在 <b>'+op+'</b> 个散货绑定。<br>请先去绑（PDA 散货列表 → 去绑价签）后再切换。','知道了',null);
+      return;
+    }
+    if(old==='mix'&&d.kind==='shelf'&&op){
+      blockDlg('无法切换为货架区','该库区存在 <b>'+op+'</b> 个散货绑定，请先去绑后再切换。','知道了',null);
+      return;
+    }
+  }
+  a.name=name;a.kind=d.kind;
+  closeDrawer();render();toast('已保存库区 '+a.code+'（'+areaKindLabel(d.kind)+'）');
+}
+function delArea(code){
+  var a=findArea(code);if(!a)return;
+  var sh=shelvesIn(code).length,op=(a.openItems||[]).length;
+  if(sh||op){blockDlg('无法删除库区','该库区存在 <b>'+sh+'</b> 个货架、<b>'+op+'</b> 个散货绑定。<br>请先清理后删除。','知道了',null);return}
+  confirmDlg('删除库区','确认删除 <b>'+esc(a.name)+'</b>（'+code+'）？删除后编码不回收。',function(){
+    var w=findWh(code.split('-')[0]);
+    if(w)w.areas=w.areas.filter(function(x){return x.code!==code});
+    render();toast('已删除库区 '+code);
+  });
+}
+function printAreaCode(code){toast('已推送打印任务：库区标识码 '+code+'（二维码）')}
+
+/* ============ 页面：货架与货位 ============ */
+PAGES.shelf=function(){
+  var opts=[];
+  WH_LIST.forEach(function(w){w.areas.forEach(function(a){opts.push({code:a.code,name:w.name+' / '+a.name,kind:a.kind||'shelf'})})});
+  if(!opts.length)return '<div class="alert">请先创建仓库与库区。</div>';
+  if(!findArea(ADM_AREA))ADM_AREA=opts[0].code;
+  var a=findArea(ADM_AREA),k=a.kind||'shelf';
+  var sel='<span>库区</span><select style="border:1px solid #dfe4ee;border-radius:7px;padding:6px 8px;font-size:12px" onchange="ADM_AREA=this.value;render()">'+
+    opts.map(function(o){return '<option value="'+o.code+'"'+(o.code===ADM_AREA?' selected':'')+'>'+esc(o.name)+'（'+areaKindLabel(o.kind)+'）</option>'}).join('')+'</select>';
+  var bar='<div class="bar">'+sel+'<div class="sp"></div>'+
+    (k==='open'?'<button class="btn" disabled>+ 新增货架（不可用）</button>':'<button class="btn p" onclick="addShelf()">+ 新增货架</button>')+'</div>';
+  var head='';
+  if(k==='open'){
+    return '<div class="path"><b>基础配置</b> / 货架与货位</div>'+
+      '<div class="card">'+bar+'</div><div style="height:12px"></div>'+
+      '<div class="alert">散货存放区无需配置货架与货位，商品直接绑定到库区。如需货位，请在「库区管理」中切换为<b>混合区</b>或<b>货架区</b>。</div>'+
+      '<div class="card"><div style="padding:36px;text-align:center;color:#909399;font-size:12.5px">该库区为散货区，未配置货架<br>绑定能力：扫库区标识码 → 商品直接绑到 '+ADM_AREA+'</div></div>';
+  }
+  var list=shelvesIn(ADM_AREA),rows=[];
+  list.forEach(function(s){
+    var st=shelfStat(s),d=[];
+    s.layers.forEach(function(l,li){
+      var used=0;l.bins.forEach(function(b){if(b.tag)used++});
+      d.push(l.name+'：'+l.bins.length+' 货位 · 已绑 '+used);
+    });
+    rows.push('<tr><td class="mono">'+s.code+'</td><td><b>'+esc(s.name)+'</b></td><td>'+st.lv+'</td><td>'+st.total+'</td>'+
+      '<td>空闲 '+st.empty+'</td>'+
+      '<td><div style="font-size:11px;color:#5b6478;line-height:1.6">'+d.join('<br>')+'</div></td>'+
+      '<td><div class="ops"><span class="lk" onclick="printShelfTags(\''+s.code+'\')">打印层标/货位标</span>'+
+      '<span class="lk d" onclick="delShelf(\''+s.code+'\')">删除</span></div></td></tr>');
+  });
+  var extra='';
+  if(k==='mix'){
+    var op=(a.openItems||[]).length;
+    extra='<div class="alert blue" style="margin-top:12px">本库区为<b>混合区</b>：货架绑定（'+list.length+' 个货架）与散货绑定（'+op+' 个）并存，PDA 端货架剖面顶部可切换到散货列表。</div>';
+  }
+  return '<div class="path"><b>基础配置</b> / 货架与货位</div>'+
+    '<div class="card">'+bar+
+    '<table><thead><tr><th>货架编码</th><th>货架名称</th><th>层级</th><th>货位</th><th>状态</th><th>层级明细</th><th>操作</th></tr></thead><tbody>'+
+    (rows.length?rows.join(''):'<tr><td colspan="7" style="text-align:center;color:#909399;padding:30px">暂无货架，点击「+ 新增货架」创建</td></tr>')+
+    '</tbody></table></div>'+extra;
+};
+function addShelf(){
+  var a=findArea(ADM_AREA);
+  if(!a||(a.kind||'shelf')==='open'){toast('散货存放区无需配置货架');return}
+  openModal('<h4>新增货架</h4><div class="mb">'+
+    '<div class="fld"><label>层数（1-6）</label><input id="nLv" value="3"></div>'+
+    '<div class="fld"><label>每层货位数（1-20）</label><input id="nBin" value="3"></div>'+
+    '<div style="font-size:11px;color:#909399">将自动生成 '+ADM_AREA+'-H0'+(shelvesIn(ADM_AREA).length+1)+' 及层/货位编码</div>'+
+    '</div><div class="mf"><button class="btn" onclick="closeModal()">取消</button><button class="btn p" onclick="addShelfOk()">创建</button></div>');
+}
+function addShelfOk(){
+  var lv=parseInt(($('#nLv')||{}).value,10)||0,bn=parseInt(($('#nBin')||{}).value,10)||0;
+  if(lv<1||lv>6||bn<1||bn>20){toast('层数 1-6，每层货位 1-20');return}
+  if(shelvesIn(ADM_AREA).length>=20){toast('单库区货架数量已达上限（20）');return}
+  var s=newShelf(ADM_AREA,shelvesIn(ADM_AREA).length+1,lv,bn);
+  SHELVES.push(s);closeModal();render();
+  toast('已创建货架 '+s.name+'（'+lv+' 层 × '+bn+' 货位）');
+}
+function delShelf(code){
+  var s=null;SHELVES.forEach(function(x){if(x.code===code)s=x});
+  if(!s)return;
+  var bound=0;s.layers.forEach(function(l){l.bins.forEach(function(b){if(b.tag)bound++})});
+  if(bound){blockDlg('无法删除货架','该货架存在 <b>'+bound+'</b> 个在架绑定，请先去绑价签。','知道了',null);return}
+  confirmDlg('删除货架','确认删除 <b>'+esc(s.name)+'</b>（'+code+'）？',function(){
+    SHELVES.splice(SHELVES.indexOf(s),1);render();toast('已删除货架 '+code);
+  });
+}
+function printShelfTags(code){toast('已推送打印任务：'+code+' 层标与货位标')}
+
+/* ============ 页面：价签管理 ============ */
+function eslRows(){
+  var rows=[];
+  WH_LIST.forEach(function(w){w.areas.forEach(function(a){
+    shelvesIn(a.code).forEach(function(s){s.layers.forEach(function(l){
+      l.bins.forEach(function(b){
+        if(b.tag)rows.push({tag:b.tag,sku:b.sku,bin:s.code+'-'+pad(s.layers.indexOf(l)+1)+'-'+pad(b.seq),
+          state:b.stock===0?'zero':'used',where:w.name+' / '+a.name});
+      });
+    })});
+    (a.openItems||[]).forEach(function(o){
+      rows.push({tag:o.tag,sku:o.sku,bin:a.code+'（库区散货）',state:o.stock===0?'zero':'used',where:w.name+' / '+a.name});
+    });
+  })});
+  FREE_TAGS.forEach(function(t){rows.push({tag:t.tag,sku:'—',bin:'—',state:'free',where:'—'})});
+  FAULT_TAGS.forEach(function(t){rows.push({tag:t.tag,sku:'—',bin:'—',state:'fault',where:t.why})});
+  return rows;
+}
+PAGES.esl=function(){
+  var all=eslRows();
+  var list=ESL_FILTER==='全部'?all:all.filter(function(r){
+    return ESL_FILTER==='已绑'?r.state==='used':r.state===({零库存:'zero',空闲:'free',故障:'fault'})[ESL_FILTER];
+  });
+  var chips=['全部','已绑','零库存','空闲','故障'].map(function(c){
+    return '<span class="mchip '+(ESL_FILTER===c?'mix':'shelf')+'" style="cursor:pointer;margin-right:6px" onclick="ESL_FILTER=\''+c+'\';render()">'+c+'</span>';
+  }).join('');
+  var rows=list.map(function(r){
+    var m={used:['已绑','used'],zero:['零库存','zero'],free:['空闲','free'],fault:['故障','fault']}[r.state];
+    return '<tr><td class="mono">'+r.tag+'</td><td><span class="mchip '+m[1]+'">'+m[0]+'</span></td>'+
+      '<td>'+esc(r.sku)+'</td><td class="mono">'+r.bin+'</td><td>'+esc(r.where)+'</td>'+
+      (r.state==='fault'?'<td><span class="lk" onclick="toast(\'已生成价签维修工单（演示）\')">提报维修</span></td>':'<td></td>')+'</tr>';
+  }).join('');
+  return '<div class="path"><b>基础配置</b> / 价签管理</div>'+
+    '<div class="alert blue">价签状态由绑定关系驱动：绑定商品 → 已绑；库存清零 → 零库存；未启用 → 空闲；异常 → 故障。价签不需要打印，由系统推送墨水屏。</div>'+
+    '<div class="card"><div class="bar"><b>价签列表</b><span class="muted">共 '+all.length+' 个</span><div class="sp"></div>'+chips+'</div>'+
+    '<table><thead><tr><th>价签编码</th><th>状态</th><th>绑定商品</th><th>绑定目标</th><th>所在位置</th><th></th></tr></thead><tbody>'+
+    (rows||'<tr><td colspan="6" style="text-align:center;color:#909399;padding:30px">暂无记录</td></tr>')+
+    '</tbody></table></div>';
+};
+
+/* ============ 页面：标签打印 ============ */
+PAGES.tag=function(){
+  var rows=[];
+  WH_LIST.forEach(function(w){w.areas.forEach(function(a){
+    var k=a.kind||'shelf';
+    rows.push('<tr><td class="mono">'+a.code+'</td><td>'+esc(w.name)+' / '+esc(a.name)+'</td>'+
+      '<td><span class="mchip '+KIND_META[k].c+'">'+areaKindLabel(k)+'</span></td>'+
+      '<td>'+(k==='shelf'?'<span class="muted">可选</span>':'<b style="color:#B88230">必配</b>')+'</td>'+
+      '<td><span class="lk" onclick="printAreaCode(\''+a.code+'\')">打印二维码</span></td></tr>');
+  })});
+  return '<div class="path"><b>基础配置</b> / 标签打印</div>'+
+    '<div class="alert">库区标识码贴于库区入口，PDA 扫此码即可把商品绑定到该库区；<b>散货区 / 混合区必配</b>。层标与货位标用于货架区绑定与补打。价签不需要打印（电子墨水屏，系统推送）。</div>'+
+    '<div class="card"><div class="bar"><b>库区标识码</b><span class="muted">编码段数：5 段=货位、4 段=层标、2 段=库区</span></div>'+
+    '<table><thead><tr><th>库区编码</th><th>所属</th><th>存放模式</th><th>标识码</th><th>操作</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+    '<div style="height:14px"></div>'+
+    '<div class="card"><div class="bar"><b>层标 / 货位标</b><div class="sp"></div>'+
+    '<button class="btn" onclick="toast(\'已生成层标打印任务（演示）\')">批量打印层标</button>'+
+    '<button class="btn" onclick="toast(\'已生成货位标打印任务（演示）\')">批量补打货位标</button></div>'+
+    '<div style="padding:14px 16px;font-size:12px;color:#5b6478;line-height:1.8">'+
+    '· 层标：<span class="mono">C01-K01-H01-02</span>（仓库-库区-货架-层级）<br>'+
+    '· 货位标：<span class="mono">C01-K01-H01-02-03</span>（层标 + 货位序号）<br>'+
+    '· 散货区不产生层标与货位标</div></div>';
+};
+
+render();
+</script>
+</body>
+</html>
